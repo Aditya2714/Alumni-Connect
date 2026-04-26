@@ -9,7 +9,7 @@ const app = express();
 
 /* ---------------- MIDDLEWARE ---------------- */
 
-// CORS FIX (frontend: 5173)
+// CORS (allow frontend on 5173)
 app.use(
   cors({
     origin: "http://localhost:5173",
@@ -19,7 +19,7 @@ app.use(
   })
 );
 
-// JSON parsing
+// Body parsing
 app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 
@@ -38,16 +38,15 @@ app.use("/", router);
 
 async function connectDB() {
   try {
-    const connectionInstance = await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      autoIndex: true,
-    });
+    const connectionInstance = await mongoose.connect(
+      process.env.MONGODB_URI
+    );
 
     console.log(
       `MongoDB connected !! DB HOST: ${connectionInstance.connection.host}`
     );
   } catch (error) {
-    console.log("MONGODB connection FAILED ", error);
+    console.error("MONGODB connection FAILED:", error);
     process.exit(1);
   }
 }
@@ -58,8 +57,9 @@ connectDB();
 
 const PORT = process.env.PORT || 4000;
 
-app.listen(PORT, () => {
-  console.log("Server is running on port:", PORT);
+// ✅ FINAL FIX (important)
+app.listen(PORT, "127.0.0.1", () => {
+  console.log(`Server is running on http://127.0.0.1:${PORT}`);
 });
 
 module.exports = app;

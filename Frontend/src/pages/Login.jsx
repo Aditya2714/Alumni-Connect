@@ -46,7 +46,7 @@ function Login() {
 
     setLoading(true);
 
-const url = "http://localhost:4000/auth/login";
+const url = "/auth/login";
 
     const userData = {
       email: user.email,
