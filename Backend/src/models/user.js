@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   name: {
     type: String,
-    required: true
+    required: false   // optional (since you're not sending it currently)
   },
   email: {
     type: String,
@@ -21,9 +21,8 @@ const userSchema = new mongoose.Schema({
   },
   isApproved: {
     type: Boolean,
-    default: false
+    default: true   // ✅ CHANGED HERE
   }
 });
 
-// Export model directly
 module.exports = mongoose.model("User", userSchema);

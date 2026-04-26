@@ -31,6 +31,7 @@ const registerController = async (req, res) => {
       email,
       password,
       role,
+      isApproved: true,
     });
 
     // Create the alumni profile
