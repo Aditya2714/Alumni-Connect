@@ -25,6 +25,12 @@ import BulkUpload from "./Components/BulkUpload.jsx";
 import SearchPeople from "./Components/SearchPeople.jsx";
 import Meeting from "./Components/Meeting.jsx";
 import Feedback from "./Components/Feedback.jsx";
+import { getLoggedIn } from "./services/authService.js";
+
+function RequireAuth({ children }) {
+  const loggedIn = getLoggedIn();
+  return loggedIn ? children : <Navigate to="/login" replace />;
+}
 
 const router = createBrowserRouter([
   {
@@ -49,40 +55,76 @@ const router = createBrowserRouter([
       },
       {
         path: "dashboard",
-        element: <Dashboard />,
+        element: (
+          <RequireAuth>
+            <Dashboard />
+          </RequireAuth>
+        ),
       },
 
       {
         path: "events",
-        element: <Event />,
+        element: (
+          <RequireAuth>
+            <Event />
+          </RequireAuth>
+        ),
       },
       {
         path: "/jobs",
-        element: <Jobs />,
+        element: (
+          <RequireAuth>
+            <Jobs />
+          </RequireAuth>
+        ),
       },
       {
         path: "/newsletter",
-        element: <Newsletter />,
+        element: (
+          <RequireAuth>
+            <Newsletter />
+          </RequireAuth>
+        ),
       },
       {
         path: "/send-mail",
-        element: <SendMail />,
+        element: (
+          <RequireAuth>
+            <SendMail />
+          </RequireAuth>
+        ),
       },
       {
         path: "/bulk-upload",
-        element: <BulkUpload />,
+        element: (
+          <RequireAuth>
+            <BulkUpload />
+          </RequireAuth>
+        ),
       },
       {
         path: "/search-people",
-        element: <SearchPeople />,
+        element: (
+          <RequireAuth>
+            <SearchPeople />
+          </RequireAuth>
+        ),
       },
       {
         path: "/meeting",
-        element: <Meeting />,
+        element: (
+          <RequireAuth>
+            <Meeting />
+          </RequireAuth>
+        ),
       },
       {
         path: "/feedback",
-        element: <Feedback />,
+        element: (
+          <RequireAuth>
+            <Feedback />
+          </RequireAuth>
+        ),
       },
     ],
   },

@@ -4,7 +4,7 @@ import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import axios from "axios";
 import { login } from "../features/authSlice";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import Loader from "../Components/Loader";
 
@@ -88,56 +88,73 @@ const url = "/auth/login";
     <>
       <ToastContainer />
 
-      <div className="flex flex-col items-center mb-28 py-2">
-        <h2 className="mt-5 text-center text-gray-900">
-          Sign in to your account
-        </h2>
+      <main className="bg-slate-50 px-4 py-12">
+        <section className="mx-auto max-w-md overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
+          <form onSubmit={handleSubmit} className="space-y-5 p-8">
+            <div>
+              <h2 className="text-2xl font-extrabold text-slate-900">
+                Sign in to your account
+              </h2>
+              <p className="mt-2 text-sm font-semibold text-slate-500">
+                New here?{" "}
+                <Link to="/register" className="text-blue-700 hover:underline">
+                  Create an account
+                </Link>
+              </p>
+            </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="rounded-md shadow-sm -space-y-px">
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-slate-600">
+                Email
+              </span>
+              <input
+                name="email"
+                type="email"
+                placeholder="you@example.com"
+                value={user.email}
+                onChange={handleChange}
+                required
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
 
-            {/* EMAIL */}
-            <input
-              name="email"
-              type="email"
-              placeholder="Email address"
-              value={user.email}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border rounded-t-md"
-            />
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-slate-600">
+                Password
+              </span>
+              <input
+                name="password"
+                type="password"
+                placeholder="Password"
+                value={user.password}
+                onChange={handleChange}
+                required
+                className="w-full rounded-lg border border-slate-300 px-4 py-3 outline-none transition focus:border-blue-700 focus:ring-4 focus:ring-blue-100"
+              />
+            </label>
 
-            {/* PASSWORD */}
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              value={user.password}
-              onChange={handleChange}
-              required
-              className="w-full px-3 py-2 border rounded-b-md"
-            />
+            <label className="block">
+              <span className="mb-2 block text-sm font-bold text-slate-600">
+                Role
+              </span>
+              <Select
+                options={roleOptions}
+                value={selectedRole}
+                onChange={handleRoleChange}
+                placeholder="Select your role"
+              />
+            </label>
 
-            {/* ROLE SELECT */}
-            <Select
-              options={roleOptions}
-              value={selectedRole}
-              onChange={handleRoleChange}
-              placeholder="Select your role"
-              className="mt-2"
-            />
-          </div>
-
-          {/* SUBMIT BUTTON */}
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2 bg-black text-white rounded-md"
-          >
-            {loading ? <Loader text="Please Wait..." /> : "Sign In"}
-          </button>
-        </form>
-      </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="min-h-[46px] w-full rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
+            >
+              {loading ? <Loader text="Please Wait..." /> : "Sign In"}
+            </button>
+          </form>
+        </section>
+      </main>
     </>
   );
 }

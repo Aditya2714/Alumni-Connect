@@ -1,105 +1,126 @@
-import React, { useState } from 'react';
-import { FaHome, FaCalendar, FaBriefcase, FaNewspaper, FaEnvelope, FaUserTie, FaSearch, FaCommentDots, FaTicketAlt, FaEnvelopeOpenText, FaUserGraduate, FaSignInAlt, FaUpload, FaMeetup, FaVideo, FaBars, FaTimes } from 'react-icons/fa';
-import { Link, NavLink } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
-import { getLoggedIn } from '../services/authService';
-import { logout } from '../features/authSlice';
-import Dropdown from './helper/Dropdown';
+import React, { useState } from "react";
+import {
+  FaBars,
+  FaBriefcase,
+  FaCalendar,
+  FaEnvelopeOpenText,
+  FaHome,
+  FaSearch,
+  FaTimes,
+  FaUpload,
+  FaUserTie,
+  FaVideo,
+} from "react-icons/fa";
+import { Link, NavLink } from "react-router-dom";
+import { useDispatch } from "react-redux";
+import { getLoggedIn } from "../services/authService";
+import { logout } from "../features/authSlice";
+import Dropdown from "./helper/Dropdown";
 
 function Topbar() {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
   const loggedIn = getLoggedIn();
   const dispatch = useDispatch();
 
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(!isMobileMenuOpen);
-  };
+  const closeMobileMenu = () => setMobileMenuOpen(false);
+
+  const linkClass = ({ isActive }) =>
+    `flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-bold transition ${
+      isActive ? "text-blue-700" : "text-slate-600 hover:text-blue-700"
+    }`;
 
   return (
-    <div className="bg-slate-100 text-black p-4 flex flex-col lg:flex-row justify-between items-center">
-      <div className="flex items-center mb-4 lg:mb-0">
-        <span> <FaUserTie className="mr-1 h-6 w-8" /></span>
-        <h2 className="text-2xl font-extrabold text-gray-800">
-          Alumni Connect
-        </h2>
+    <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 text-slate-900 backdrop-blur">
+      <div className="mx-auto flex min-h-[72px] w-[min(1120px,calc(100%-2rem))] items-center justify-between gap-4">
+        <Link
+          to={loggedIn ? "/dashboard" : "/home"}
+          className="flex items-center gap-3"
+          onClick={closeMobileMenu}
+        >
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-blue-700 text-sm font-extrabold text-white">
+            AC
+          </span>
+          <span className="flex items-center gap-2 text-xl font-extrabold">
+            <FaUserTie className="hidden text-blue-700 sm:block" />
+            Alumni Connect
+          </span>
+        </Link>
+
+        <button
+          type="button"
+          className="grid h-10 w-10 place-items-center rounded-lg border border-slate-200 text-slate-700 lg:hidden"
+          onClick={() => setMobileMenuOpen((open) => !open)}
+          aria-label="Toggle navigation"
+        >
+          {isMobileMenuOpen ? <FaTimes /> : <FaBars />}
+        </button>
+
+        <nav
+          className={`absolute left-4 right-4 top-[72px] rounded-lg border border-slate-200 bg-white p-4 shadow-xl lg:static lg:flex lg:items-center lg:gap-2 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none ${
+            isMobileMenuOpen ? "grid gap-2" : "hidden"
+          }`}
+        >
+          {loggedIn ? (
+            <>
+              <NavLink to="/dashboard" className={linkClass} onClick={closeMobileMenu}>
+                <FaHome /> Dashboard
+              </NavLink>
+              <NavLink to="/events" className={linkClass} onClick={closeMobileMenu}>
+                <FaCalendar /> Events
+              </NavLink>
+              <NavLink to="/jobs" className={linkClass} onClick={closeMobileMenu}>
+                <FaBriefcase /> Jobs
+              </NavLink>
+              <div className="rounded-lg px-2 py-2 text-sm font-bold text-slate-600">
+                <Dropdown />
+              </div>
+              <NavLink to="/meeting" className={linkClass} onClick={closeMobileMenu}>
+                <FaVideo /> Meeting
+              </NavLink>
+              <NavLink to="/bulk-upload" className={linkClass} onClick={closeMobileMenu}>
+                <FaUpload /> Bulk Import
+              </NavLink>
+              <NavLink to="/search-people" className={linkClass} onClick={closeMobileMenu}>
+                <FaSearch /> Search Alumni
+              </NavLink>
+              <NavLink to="/send-mail" className={linkClass} onClick={closeMobileMenu}>
+                <FaEnvelopeOpenText /> Send Mail
+              </NavLink>
+              <button
+                type="button"
+                onClick={() => {
+                  dispatch(logout());
+                  closeMobileMenu();
+                }}
+                className="rounded-lg border border-slate-900 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-900 hover:text-white"
+              >
+                Logout
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/home" className={linkClass} onClick={closeMobileMenu}>
+                <FaHome /> Home
+              </NavLink>
+              <Link
+                to="/register"
+                onClick={closeMobileMenu}
+                className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-bold text-slate-900 transition hover:border-slate-900"
+              >
+                Register
+              </Link>
+              <Link
+                to="/login"
+                onClick={closeMobileMenu}
+                className="rounded-lg bg-blue-700 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-800"
+              >
+                Login
+              </Link>
+            </>
+          )}
+        </nav>
       </div>
-
-      {/* Hamburger icon for mobile */}
-      <div className="lg:hidden cursor-pointer" onClick={toggleMobileMenu}>
-        {isMobileMenuOpen ? <FaTimes className="text-xl" /> : <FaBars className="text-xl" />}
-      </div>
-
-      <nav className={`lg:flex lg:flex-row lg:space-x-4 font-semibold items-center ${isMobileMenuOpen ? 'flex flex-col' : 'hidden'}`}>
-        {loggedIn ? (
-          <>
-            <Link to="/dashboard" className="text-sm flex items-center">
-              <FaHome className="mr-1" /> Dashboard
-            </Link>
-          </>
-        ) : (
-          <>
-            <Link to="/home" className="text-sm flex items-center">
-              <FaHome className="mr-1" /> Home
-            </Link>
-          </>
-        )}
-
-        <Link to="/events" className="text-sm font-semibold flex items-center">
-          <FaCalendar className="mr-1" /> Events
-        </Link>
-        <Link to="/jobs" className="text-sm font-semibold flex items-center">
-          <FaBriefcase className="mr-1" /> Jobs
-        </Link>
-        {/* <Link to="/newsletter" className="text-sm font-semibold flex items-center">
-          <FaNewspaper className="mr-1" /> Newsletters
-        </Link> */}
-        <Dropdown />
-        <Link to="/meeting" className="text-sm font-semibold flex items-center">
-          <FaVideo className="mr-1" /> Meeting
-        </Link>
-        <Link to="/bulk-upload" className="text-sm font-semibold flex items-center">
-          <FaUpload className="mr-1" /> Bulk Import
-        </Link>
-        <Link to="/search-people" className="text-sm font-semibold flex items-center">
-          <FaSearch className="mr-1" /> Search Alumni
-        </Link>
-
-        <Link to="/send-mail" className="text-sm font-semibold flex items-center">
-          <FaEnvelopeOpenText className="mr-1" /> Send Mail
-        </Link>
-
-        {loggedIn ? (
-          // Render these links if the user is logged in
-          <>
-            <NavLink
-              onClick={() => {
-                dispatch(logout());
-              }}
-              className="border border-black hover:bg-black hover:text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Logout
-            </NavLink>
-          </>
-        ) : (
-          <>
-            <Link
-              to="/register"
-              className="border border-black hover:bg-black hover:text-white px-4 py-2 rounded-md text-sm font-medium"
-            >
-              Register
-            </Link>
-
-            <Link
-              to="/login"
-              className="bg-black text-white px-4 py-2 rounded-md text-sm font-medium mt-2 lg:mt-0"
-            >
-              Login
-            </Link>
-            
-          </>
-        )}
-      </nav>
-    </div>
+    </header>
   );
 }
 
