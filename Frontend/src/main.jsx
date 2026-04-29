@@ -20,16 +20,38 @@ import Home from "./Components/Home.jsx";
 import Event from "./Components/Event.jsx";
 import Jobs from "./Components/Jobs.jsx";
 import Newsletter from "./Components/NewsLetter.jsx";
-import SendMail from "./Components/SendMail.jsx";
+import Announcements from "./Components/SendMail.jsx";
 import BulkUpload from "./Components/BulkUpload.jsx";
 import SearchPeople from "./Components/SearchPeople.jsx";
-import Meeting from "./Components/Meeting.jsx";
+import Mentorship from "./Components/Meeting.jsx";
 import Feedback from "./Components/Feedback.jsx";
-import { getLoggedIn } from "./services/authService.js";
+import Profile from "./Components/Profile.jsx";
+import {
+  AlumniStories,
+  CareerReferrals,
+  Connections,
+  Contributions,
+  DiscussionForum,
+  RecognitionWall,
+  ResourceLibrary,
+} from "./Components/AlumniFeatures.jsx";
+import { getLoggedIn, getUserData } from "./services/authService.js";
 
 function RequireAuth({ children }) {
   const loggedIn = getLoggedIn();
   return loggedIn ? children : <Navigate to="/login" replace />;
+}
+
+function RequireAdminTool({ children }) {
+  const loggedIn = getLoggedIn();
+  const user = getUserData();
+
+  if (!loggedIn) return <Navigate to="/login" replace />;
+  return ["admin", "college"].includes(user?.role) ? (
+    children
+  ) : (
+    <Navigate to="/dashboard" replace />
+  );
 }
 
 const router = createBrowserRouter([
@@ -61,6 +83,14 @@ const router = createBrowserRouter([
           </RequireAuth>
         ),
       },
+      {
+        path: "profile",
+        element: (
+          <RequireAuth>
+            <Profile />
+          </RequireAuth>
+        ),
+      },
 
       {
         path: "events",
@@ -87,19 +117,23 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/send-mail",
+        path: "/announcements",
         element: (
           <RequireAuth>
-            <SendMail />
+            <Announcements />
           </RequireAuth>
         ),
       },
       {
+        path: "/send-mail",
+        element: <Navigate to="/announcements" replace />,
+      },
+      {
         path: "/bulk-upload",
         element: (
-          <RequireAuth>
+          <RequireAdminTool>
             <BulkUpload />
-          </RequireAuth>
+          </RequireAdminTool>
         ),
       },
       {
@@ -111,12 +145,80 @@ const router = createBrowserRouter([
         ),
       },
       {
-        path: "/meeting",
+        path: "/alumni-directory",
         element: (
           <RequireAuth>
-            <Meeting />
+            <SearchPeople />
           </RequireAuth>
         ),
+      },
+      {
+        path: "/connections",
+        element: (
+          <RequireAuth>
+            <Connections />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/career-referrals",
+        element: (
+          <RequireAuth>
+            <CareerReferrals />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/alumni-stories",
+        element: (
+          <RequireAuth>
+            <AlumniStories />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/forum",
+        element: (
+          <RequireAuth>
+            <DiscussionForum />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/resources",
+        element: (
+          <RequireAuth>
+            <ResourceLibrary />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/contributions",
+        element: (
+          <RequireAuth>
+            <Contributions />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/recognition",
+        element: (
+          <RequireAuth>
+            <RecognitionWall />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/mentorship",
+        element: (
+          <RequireAuth>
+            <Mentorship />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/meeting",
+        element: <Navigate to="/mentorship" replace />,
       },
       {
         path: "/feedback",

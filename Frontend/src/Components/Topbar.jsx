@@ -1,21 +1,15 @@
 import React, { useState } from "react";
 import {
   FaBars,
-  FaBriefcase,
-  FaCalendar,
-  FaEnvelopeOpenText,
   FaHome,
-  FaSearch,
   FaTimes,
-  FaUpload,
+  FaUserCircle,
   FaUserTie,
-  FaVideo,
 } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { getLoggedIn } from "../services/authService";
 import { logout } from "../features/authSlice";
-import Dropdown from "./helper/Dropdown";
 
 function Topbar() {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -65,26 +59,8 @@ function Topbar() {
               <NavLink to="/dashboard" className={linkClass} onClick={closeMobileMenu}>
                 <FaHome /> Dashboard
               </NavLink>
-              <NavLink to="/events" className={linkClass} onClick={closeMobileMenu}>
-                <FaCalendar /> Events
-              </NavLink>
-              <NavLink to="/jobs" className={linkClass} onClick={closeMobileMenu}>
-                <FaBriefcase /> Jobs
-              </NavLink>
-              <div className="rounded-lg px-2 py-2 text-sm font-bold text-slate-600">
-                <Dropdown />
-              </div>
-              <NavLink to="/meeting" className={linkClass} onClick={closeMobileMenu}>
-                <FaVideo /> Meeting
-              </NavLink>
-              <NavLink to="/bulk-upload" className={linkClass} onClick={closeMobileMenu}>
-                <FaUpload /> Bulk Import
-              </NavLink>
-              <NavLink to="/search-people" className={linkClass} onClick={closeMobileMenu}>
-                <FaSearch /> Search Alumni
-              </NavLink>
-              <NavLink to="/send-mail" className={linkClass} onClick={closeMobileMenu}>
-                <FaEnvelopeOpenText /> Send Mail
+              <NavLink to="/profile" className={linkClass} onClick={closeMobileMenu}>
+                <FaUserCircle /> Profile
               </NavLink>
               <button
                 type="button"
