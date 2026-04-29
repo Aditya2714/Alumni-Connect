@@ -111,6 +111,18 @@ function Dashboard() {
       to: "/resources",
       icon: FaBookOpen,
     },
+    {
+      title: "Alumni Stories",
+      description: "Read achievements, journeys, and startup stories.",
+      to: "/alumni-stories",
+      icon: FaUsers,
+    },
+    {
+      title: "Recognition Wall",
+      description: "Celebrate promotions, awards, publications, and launches.",
+      to: "/recognition",
+      icon: FaAward,
+    },
   ];
 
   const stats = [
