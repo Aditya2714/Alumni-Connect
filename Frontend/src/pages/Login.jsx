@@ -22,9 +22,7 @@ function Login() {
 
   const roleOptions = [
     { value: "alumni", label: "Alumni" },
-    { value: "faculty", label: "Faculty" },
     { value: "admin", label: "Admin" },
-    { value: "college", label: "College" },
   ];
 
   const handleRoleChange = (selectedOption) => {

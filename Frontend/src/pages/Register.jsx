@@ -87,6 +87,7 @@ function Register() {
 
   const inputClass =
     "w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
+  const isAlumniRole = !selectedRole || selectedRole.value === "alumni";
 
   const selectStyles = {
     control: (base, state) => ({
@@ -189,84 +190,8 @@ function Register() {
                     className={inputClass}
                   />
                 </label>
-              </div>
-            </section>
 
-            <section>
-              <h2 className="mb-4 text-lg font-extrabold text-slate-900">
-                Academic details
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Start year
-                  </span>
-                  <input
-                    name="startYear"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="2020"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    End year
-                  </span>
-                  <input
-                    name="endYear"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="2024"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Degree
-                  </span>
-                  <Select
-                    options={degreeOptions}
-                    value={selectedDegree}
-                    onChange={handleDegreeChange}
-                    placeholder="Select Degree"
-                    styles={selectStyles}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Branch
-                  </span>
-                  <input
-                    name="branch"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="Computer Science"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Roll number
-                  </span>
-                  <input
-                    name="rollNumber"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="USN / Roll Number"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block">
+                <label className="block md:col-span-2">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
                     Role
                   </span>
@@ -280,6 +205,84 @@ function Register() {
                 </label>
               </div>
             </section>
+
+            {isAlumniRole && (
+              <section>
+                <h2 className="mb-4 text-lg font-extrabold text-slate-900">
+                  Academic details
+                </h2>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      Start year
+                    </span>
+                    <input
+                      name="startYear"
+                      type="text"
+                      required={isAlumniRole}
+                      onChange={handleChange}
+                      placeholder="2020"
+                      className={inputClass}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      End year
+                    </span>
+                    <input
+                      name="endYear"
+                      type="text"
+                      required={isAlumniRole}
+                      onChange={handleChange}
+                      placeholder="2024"
+                      className={inputClass}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      Degree
+                    </span>
+                    <Select
+                      options={degreeOptions}
+                      value={selectedDegree}
+                      onChange={handleDegreeChange}
+                      placeholder="Select Degree"
+                      styles={selectStyles}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      Branch
+                    </span>
+                    <input
+                      name="branch"
+                      type="text"
+                      required={isAlumniRole}
+                      onChange={handleChange}
+                      placeholder="Computer Science"
+                      className={inputClass}
+                    />
+                  </label>
+
+                  <label className="block">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      Roll number
+                    </span>
+                    <input
+                      name="rollNumber"
+                      type="text"
+                      required={isAlumniRole}
+                      onChange={handleChange}
+                      placeholder="USN / Roll Number"
+                      className={inputClass}
+                    />
+                  </label>
+                </div>
+              </section>
+            )}
 
             <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-sm font-semibold text-slate-500">
