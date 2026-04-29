@@ -64,6 +64,13 @@ function Register() {
         email: formData.email,
         password: formData.password,
         role: formData.role || "alumni",
+        firstName: formData.firstName,
+        lastName: formData.lastName,
+        startYear: formData.startYear,
+        endYear: formData.endYear,
+        degree: formData.degree,
+        branch: formData.branch,
+        rollNumber: formData.rollNumber,
       };
 
       const response = await axios.post(
