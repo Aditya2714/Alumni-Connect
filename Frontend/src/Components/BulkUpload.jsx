@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { FaFileCsv, FaUpload } from "react-icons/fa";
+import { FaFileCsv, FaFileExcel, FaUpload } from "react-icons/fa";
 import { getLoggedIn } from "../services/authService";
 import NotLoggedIn from "./helper/NotLoggedIn";
 
@@ -33,7 +33,7 @@ const BulkUpload = () => {
     event.preventDefault();
 
     if (!selectedFile) {
-      setError("Please choose a CSV file first.");
+      setError("Please choose a CSV, XLSX, or XLS file first.");
       return;
     }
 
@@ -73,8 +73,9 @@ const BulkUpload = () => {
               Bulk import alumni records.
             </h1>
             <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base">
-              Upload a CSV exported from Google Forms, Google Sheets, or Excel.
-              The records will be added directly to Users and Alumni collections.
+              Upload CSV or Excel files exported from Google Forms, Google
+              Sheets, or Microsoft Excel. The records will be converted into
+              import rows and added directly to Users and Alumni collections.
             </p>
           </div>
 
@@ -86,25 +87,25 @@ const BulkUpload = () => {
             >
               <div className="mb-5 flex items-center gap-3">
                 <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
-                  <FaFileCsv />
+                  <FaFileExcel />
                 </div>
                 <div>
                   <h2 className="text-2xl font-extrabold text-slate-900">
-                    Upload CSV file
+                    Upload import file
                   </h2>
                   <p className="text-sm font-semibold text-slate-500">
-                    Use `.csv` format for direct database import.
+                    Supported formats: `.csv`, `.xlsx`, `.xls`.
                   </p>
                 </div>
               </div>
 
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-600">
-                  Choose CSV
+                  Choose file
                 </span>
                 <input
                   type="file"
-                  accept=".csv,text/csv"
+                  accept=".csv,.xlsx,.xls,text/csv,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                   className={inputClass}
                   onChange={handleFileChange}
                 />
@@ -133,7 +134,7 @@ const BulkUpload = () => {
 
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
               <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
-                CSV format
+                Import format
               </p>
               <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
                 Required columns
@@ -152,6 +153,11 @@ const BulkUpload = () => {
                 Optional columns supported: password, company, designation,
                 location. If password is missing, the default password will be
                 `alumni123`.
+              </p>
+              <p className="mt-3 flex items-center gap-2 text-sm font-semibold leading-6 text-slate-500">
+                <FaFileCsv className="text-blue-700" />
+                Google Form responses can be downloaded as CSV or Excel and
+                uploaded here directly.
               </p>
 
               {result && (

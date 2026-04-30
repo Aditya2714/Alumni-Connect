@@ -1,6 +1,20 @@
 const multer = require("multer");
+const XLSX = require("xlsx");
 const Alumni = require("../models/alumniModel");
 const User = require("../models/user");
+
+const supportedExtensions = [".csv", ".xlsx", ".xls"];
+const supportedMimeTypes = [
+  "text/csv",
+  "application/csv",
+  "application/vnd.ms-excel",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
+const getFileExtension = (fileName = "") => {
+  const lowerName = fileName.toLowerCase();
+  return supportedExtensions.find((extension) => lowerName.endsWith(extension)) || "";
+};
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -8,12 +22,12 @@ const upload = multer({
     fileSize: 5 * 1024 * 1024,
   },
   fileFilter: (req, file, cb) => {
-    const isCsv =
-      file.mimetype === "text/csv" ||
-      file.originalname.toLowerCase().endsWith(".csv");
+    const extension = getFileExtension(file.originalname);
+    const isSupported =
+      supportedMimeTypes.includes(file.mimetype) || supportedExtensions.includes(extension);
 
-    if (!isCsv) {
-      return cb(new Error("Please upload a CSV file. Export Excel or Google Forms data as CSV first."));
+    if (!isSupported) {
+      return cb(new Error("Please upload a CSV, XLSX, or XLS file."));
     }
 
     cb(null, true);
@@ -57,6 +71,29 @@ const parseCsv = (content) => {
   return rows;
 };
 
+const parseSpreadsheet = (buffer) => {
+  const workbook = XLSX.read(buffer, { type: "buffer" });
+  const firstSheetName = workbook.SheetNames[0];
+
+  if (!firstSheetName) return [];
+
+  return XLSX.utils.sheet_to_json(workbook.Sheets[firstSheetName], {
+    header: 1,
+    defval: "",
+    blankrows: false,
+  });
+};
+
+const parseUploadedRows = (file) => {
+  const extension = getFileExtension(file.originalname);
+
+  if (extension === ".csv") {
+    return parseCsv(file.buffer.toString("utf-8"));
+  }
+
+  return parseSpreadsheet(file.buffer);
+};
+
 const normalizeHeader = (header) =>
   header
     .toLowerCase()
@@ -78,16 +115,16 @@ const bulkImport = (req, res) => {
       }
 
       if (!req.file) {
-        return res.status(400).json({ status: "fail", message: "CSV file is required" });
+        return res.status(400).json({ status: "fail", message: "CSV, XLSX, or XLS file is required" });
       }
 
       if (req.user?.role !== "admin") {
         return res.status(403).json({ status: "fail", message: "Only admin can bulk import alumni" });
       }
 
-      const rows = parseCsv(req.file.buffer.toString("utf-8"));
+      const rows = parseUploadedRows(req.file);
       if (rows.length < 2) {
-        return res.status(400).json({ status: "fail", message: "CSV must contain a header row and at least one data row" });
+        return res.status(400).json({ status: "fail", message: "File must contain a header row and at least one data row" });
       }
 
       const headers = rows[0];
