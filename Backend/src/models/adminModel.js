@@ -23,6 +23,9 @@ const AdminSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  imageUrl: String,
+  fileType: String,
+  originalFileName: String,
 });
 
 var Admin = mongoose.model("Admin", AdminSchema);

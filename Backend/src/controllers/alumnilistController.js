@@ -1,8 +1,8 @@
-// const { Alumni } = require("../models/alumniModel");
-const { User } = require("../models/user");
+const Alumni = require("../models/alumniModel");
+
 async function alumniListController(req, res) {
   try {
-    const alumni = await User.find({ role: "alumni", isApproved: false });
+    const alumni = await Alumni.find().sort({ createdAt: -1 });
     res.status(200).json({
       status: "success",
       data: {

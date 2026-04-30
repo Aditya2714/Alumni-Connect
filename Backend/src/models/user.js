@@ -22,6 +22,11 @@ const userSchema = new mongoose.Schema({
   isApproved: {
     type: Boolean,
     default: true   // ✅ CHANGED HERE
+  },
+  approvalStatus: {
+    type: String,
+    enum: ["pending", "approved", "rejected"],
+    default: "approved"
   }
 });
 

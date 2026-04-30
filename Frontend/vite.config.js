@@ -12,6 +12,38 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
       },
+      "/profile": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/alumni": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/admin": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/event": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/jobs": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/bulk": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/announcements": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/recognition": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
     },
   },
 });

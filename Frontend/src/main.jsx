@@ -22,6 +22,9 @@ import Jobs from "./Components/Jobs.jsx";
 import Newsletter from "./Components/NewsLetter.jsx";
 import Announcements from "./Components/SendMail.jsx";
 import BulkUpload from "./Components/BulkUpload.jsx";
+import AdminApprovals from "./Components/AdminApprovals.jsx";
+import AdminReports from "./Components/AdminReports.jsx";
+import ManageAlumni from "./Components/ManageAlumni.jsx";
 import SearchPeople from "./Components/SearchPeople.jsx";
 import Mentorship from "./Components/Meeting.jsx";
 import Feedback from "./Components/Feedback.jsx";
@@ -133,6 +136,30 @@ const router = createBrowserRouter([
         element: (
           <RequireAdminTool>
             <BulkUpload />
+          </RequireAdminTool>
+        ),
+      },
+      {
+        path: "/approvals",
+        element: (
+          <RequireAdminTool>
+            <AdminApprovals />
+          </RequireAdminTool>
+        ),
+      },
+      {
+        path: "/reports",
+        element: (
+          <RequireAdminTool>
+            <AdminReports />
+          </RequireAdminTool>
+        ),
+      },
+      {
+        path: "/manage-alumni",
+        element: (
+          <RequireAdminTool>
+            <ManageAlumni />
           </RequireAdminTool>
         ),
       },

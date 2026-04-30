@@ -11,9 +11,25 @@ const jobSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    company: {
+      type: String,
+      default: "Not specified",
+    },
+    location: {
+      type: String,
+      default: "Not specified",
+    },
+    type: {
+      type: String,
+      default: "Full-time",
+    },
+    status: {
+      type: String,
+      default: "Open",
+    },
     vacancy: {
       type: Number,
-      required: true,
+      default: 1,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

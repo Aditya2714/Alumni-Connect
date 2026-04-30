@@ -1,7 +1,8 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import { FaBuilding, FaMapMarkerAlt, FaSearch, FaUserPlus } from "react-icons/fa";
 
-const alumni = [
+const fallbackAlumni = [
   {
     id: 1,
     name: "Priya Sharma",
@@ -35,6 +36,8 @@ const alumni = [
 ];
 
 function SearchPeople() {
+  const [alumni, setAlumni] = useState(fallbackAlumni);
+  const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     keyword: "",
     batch: "",
@@ -46,6 +49,47 @@ function SearchPeople() {
     const { name, value } = event.target;
     setFilters((current) => ({ ...current, [name]: value }));
   };
+
+  useEffect(() => {
+    const fetchAlumni = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get("/alumni");
+        const alumniList = response.data.data.alumni.map((person) => {
+          const name = [person.firstName, person.lastName].filter(Boolean).join(" ") || person.email;
+          return {
+            id: person._id,
+            name,
+            batch: person.endYear ? String(person.endYear) : "Not added",
+            branch: person.branch || "Not added",
+            role:
+              person.designation ||
+              person.workExperiences?.[0]?.workTitle ||
+              "Alumni",
+            company:
+              person.company ||
+              person.workExperiences?.[0]?.company ||
+              "Not added",
+            location: person.location || "Not added",
+            imageUrl: person.imageUrl,
+            initials: name
+              .split(" ")
+              .map((part) => part[0])
+              .join("")
+              .slice(0, 2)
+              .toUpperCase(),
+          };
+        });
+        setAlumni(alumniList);
+      } catch (error) {
+        console.error("Alumni directory fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAlumni();
+  }, []);
 
   const filteredAlumni = useMemo(() => {
     const keyword = filters.keyword.toLowerCase();
@@ -77,6 +121,11 @@ function SearchPeople() {
             Discover classmates, mentors, founders, and industry professionals
             from the CMRIT alumni network.
           </p>
+          {loading && (
+            <p className="mt-3 text-sm font-semibold text-teal-100">
+              Loading alumni from database...
+            </p>
+          )}
         </div>
 
         <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
@@ -143,7 +192,15 @@ function SearchPeople() {
             >
               <div className="flex items-center gap-4">
                 <div className="grid h-14 w-14 place-items-center rounded-full bg-slate-950 text-lg font-extrabold text-white">
-                  {person.initials}
+                  {person.imageUrl ? (
+                    <img
+                      src={person.imageUrl}
+                      alt={`${person.name} profile`}
+                      className="h-full w-full rounded-full object-cover"
+                    />
+                  ) : (
+                    person.initials
+                  )}
                 </div>
                 <div>
                   <h2 className="font-extrabold text-slate-900">{person.name}</h2>
@@ -166,6 +223,11 @@ function SearchPeople() {
             </article>
           ))}
         </section>
+        {!filteredAlumni.length && (
+          <section className="rounded-lg border border-slate-200 bg-white p-6 text-center font-bold text-slate-500">
+            No alumni found for the selected filters.
+          </section>
+        )}
       </section>
     </main>
   );

@@ -1,50 +1,112 @@
-import React, { useState } from "react";
-import { FaBullhorn, FaPaperPlane } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  FaBullhorn,
+  FaEdit,
+  FaPaperPlane,
+  FaTimes,
+  FaTrash,
+} from "react-icons/fa";
+import { getUserData } from "../services/authService";
 
 const audiences = ["All Alumni", "Specific Batch", "Specific Branch", "Faculty", "College"];
 
-function Announcements() {
-  const [announcement, setAnnouncement] = useState({
-    title: "",
-    audience: audiences[0],
-    message: "",
-  });
+const emptyAnnouncement = {
+  title: "",
+  audience: audiences[0],
+  message: "",
+};
 
-  const [items, setItems] = useState([
-    {
-      id: 1,
-      title: "Alumni Leadership Summit",
-      audience: "All Alumni",
-      message: "Registrations are open for the upcoming alumni leadership summit.",
-      status: "Published",
-    },
-    {
-      id: 2,
-      title: "Career Night: Tech & Product",
-      audience: "Specific Branch",
-      message: "Computer Science alumni are invited to join the online career panel.",
-      status: "Draft",
-    },
-  ]);
+const formatAnnouncementForUi = (item) => ({
+  id: item._id,
+  title: item.title,
+  audience: item.audience,
+  message: item.message,
+  status: "Published",
+});
+
+function Announcements() {
+  const user = getUserData() || {};
+  const isAdmin = user.role === "admin";
+  const [announcement, setAnnouncement] = useState(emptyAnnouncement);
+  const [items, setItems] = useState([]);
+  const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchAnnouncements = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get("/announcements");
+        setItems(response.data.data.announcements.map(formatAnnouncementForUi));
+      } catch (error) {
+        console.error("Announcements fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAnnouncements();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setAnnouncement((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!announcement.title.trim() || !announcement.message.trim()) return;
 
-    setItems((current) => [
-      {
-        id: Date.now(),
-        ...announcement,
-        status: "Draft",
-      },
-      ...current,
-    ]);
-    setAnnouncement({ title: "", audience: audiences[0], message: "" });
+    try {
+      if (editingAnnouncementId) {
+        const response = await axios.patch(
+          `/announcements/${editingAnnouncementId}`,
+          announcement
+        );
+        const updated = formatAnnouncementForUi(response.data.data.announcement);
+        setItems((current) =>
+          current.map((item) =>
+            item.id === editingAnnouncementId ? updated : item
+          )
+        );
+      } else {
+        const response = await axios.post("/announcements", announcement);
+        const created = formatAnnouncementForUi(response.data.data.announcement);
+        setItems((current) => [created, ...current]);
+      }
+
+      setAnnouncement(emptyAnnouncement);
+      setEditingAnnouncementId(null);
+    } catch (error) {
+      console.error("Announcement save failed:", error);
+    }
+  };
+
+  const handleEditAnnouncement = (item) => {
+    setEditingAnnouncementId(item.id);
+    setAnnouncement({
+      title: item.title,
+      audience: item.audience,
+      message: item.message,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingAnnouncementId(null);
+    setAnnouncement(emptyAnnouncement);
+  };
+
+  const handleDeleteAnnouncement = async (announcementId) => {
+    try {
+      await axios.delete(`/announcements/${announcementId}`);
+      setItems((current) =>
+        current.filter((item) => item.id !== announcementId)
+      );
+      if (editingAnnouncementId === announcementId) handleCancelEdit();
+    } catch (error) {
+      console.error("Announcement delete failed:", error);
+    }
   };
 
   const inputClass =
@@ -64,9 +126,14 @@ function Announcements() {
             Create targeted announcements for alumni, faculty, branches, and
             batches without making the feature feel like a raw email tool.
           </p>
+          {loading && (
+            <p className="mt-3 text-sm font-semibold text-teal-100">
+              Loading announcements from database...
+            </p>
+          )}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+        {isAdmin && (
           <form
             onSubmit={handleSubmit}
             className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
@@ -77,15 +144,17 @@ function Announcements() {
               </div>
               <div>
                 <h2 className="text-2xl font-extrabold text-slate-900">
-                  New announcement
+                  {editingAnnouncementId ? "Edit announcement" : "New announcement"}
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
-                  Choose an audience and prepare the update.
+                  {editingAnnouncementId
+                    ? "Update the selected announcement."
+                    : "Choose an audience and prepare the update."}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-600">
                   Title
@@ -115,7 +184,7 @@ function Announcements() {
                 </select>
               </label>
 
-              <label className="block">
+              <label className="block md:col-span-2">
                 <span className="mb-2 block text-sm font-bold text-slate-600">
                   Message
                 </span>
@@ -123,56 +192,98 @@ function Announcements() {
                   name="message"
                   value={announcement.message}
                   onChange={handleChange}
-                  rows="5"
+                  rows="4"
                   placeholder="Write the update for the selected audience."
                   className={inputClass}
                 />
               </label>
+            </div>
 
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="submit"
-                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
+                className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
               >
-                <FaPaperPlane /> Save Announcement
+                <FaPaperPlane />{" "}
+                {editingAnnouncementId ? "Update Announcement" : "Save Announcement"}
               </button>
+              {editingAnnouncementId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-slate-300 px-5 font-extrabold text-slate-900 transition hover:border-slate-900"
+                >
+                  <FaTimes /> Cancel
+                </button>
+              )}
             </div>
           </form>
+        )}
 
-          <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
-              Updates
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
-              Recent announcements
-            </h2>
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+            Updates
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
+            Recent announcements
+          </h2>
 
-            <div className="mt-5 space-y-4">
-              {items.map((item) => (
-                <article
-                  key={item.id}
-                  className="rounded-lg border border-slate-200 p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-extrabold text-slate-900">
-                        {item.title}
-                      </h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">
-                        Audience: {item.audience}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      {item.status}
-                    </span>
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {items.map((item) => (
+              <article
+                key={item.id}
+                className="rounded-lg border border-slate-200 p-4"
+              >
+                <div className="flex flex-wrap items-start justify-between gap-3">
+                  <div>
+                    <h3 className="font-extrabold text-slate-900">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm font-semibold text-slate-500">
+                      Audience: {item.audience}
+                    </p>
                   </div>
-                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
-                    {item.message}
-                  </p>
-                </article>
-              ))}
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                    {item.status}
+                  </span>
+                </div>
+                <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
+                  {item.message}
+                </p>
+
+                {isAdmin && (
+                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => handleEditAnnouncement(item)}
+                      className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white transition hover:bg-blue-800"
+                    >
+                      <FaEdit /> Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteAnnouncement(item.id)}
+                      className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 font-extrabold text-red-700 transition hover:bg-red-100"
+                    >
+                      <FaTrash /> Delete
+                    </button>
+                  </div>
+                )}
+              </article>
+            ))}
+          </div>
+
+          {!loading && !items.length && (
+            <div className="mt-5 rounded-lg border border-dashed border-slate-300 bg-slate-50 p-8 text-center">
+              <h3 className="text-xl font-extrabold text-slate-900">
+                No announcements posted yet
+              </h3>
+              <p className="mt-2 text-sm font-semibold text-slate-500">
+                Announcements will appear here after an admin publishes them.
+              </p>
             </div>
-          </section>
-        </div>
+          )}
+        </section>
       </section>
     </main>
   );

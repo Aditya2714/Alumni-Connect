@@ -1,9 +1,14 @@
-import { useState } from "react";
-import { FaCamera, FaSave, FaUserCircle } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import axios from "axios";
+import { FaCamera, FaFilePdf, FaSave } from "react-icons/fa";
+import { useDispatch } from "react-redux";
+import { toast, ToastContainer } from "react-toastify";
+import { login } from "../features/authSlice";
 import { getUserData } from "../services/authService";
 
 function Profile() {
   const user = getUserData() || {};
+  const dispatch = useDispatch();
   const displayName =
     [user.firstName, user.lastName].filter(Boolean).join(" ") ||
     user.name ||
@@ -29,12 +34,82 @@ function Profile() {
     designation: user.designation || "",
     location: user.location || "",
     bio: user.bio || "",
-    photoUrl: user.profileImage || user.avatar || user.image || user.photoUrl || "",
+    photoUrl: user.imageUrl || user.profileImage || user.avatar || user.image || user.photoUrl || "",
+    fileType: user.fileType || "",
+    originalFileName: user.originalFileName || "",
   });
+  const [profileFile, setProfileFile] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axios.get("/profile/me");
+        const latestProfile = response.data.data.profile;
+        setProfile((current) => ({
+          ...current,
+          firstName: latestProfile.firstName || "",
+          lastName: latestProfile.lastName || "",
+          email: latestProfile.email || "",
+          phone: latestProfile.mobileNumber || latestProfile.phone || "",
+          branch: latestProfile.branch || "",
+          degree: latestProfile.degree || "",
+          startYear: latestProfile.startYear || "",
+          endYear: latestProfile.endYear || "",
+          company: latestProfile.company || "",
+          designation: latestProfile.designation || "",
+          location: latestProfile.location || "",
+          bio: latestProfile.bio || "",
+          photoUrl: latestProfile.imageUrl || latestProfile.photoUrl || "",
+          fileType: latestProfile.fileType || "",
+          originalFileName: latestProfile.originalFileName || "",
+        }));
+        dispatch(login({ ...latestProfile, role: latestProfile.role || user.role }));
+      } catch (error) {
+        console.error("Profile fetch failed:", error);
+      }
+    };
+
+    fetchProfile();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setProfile((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSaving(true);
+
+    try {
+      const formData = new FormData();
+      Object.entries(profile).forEach(([key, value]) => {
+        if (!["photoUrl", "fileType", "originalFileName"].includes(key)) {
+          formData.append(key, value);
+        }
+      });
+      if (profileFile) formData.append("file", profileFile);
+
+      const response = await axios.put("/profile/me", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const updatedProfile = response.data.data.profile;
+      dispatch(login({ ...updatedProfile, role: updatedProfile.role || user.role }));
+      setProfile((current) => ({
+        ...current,
+        photoUrl: updatedProfile.imageUrl || "",
+        fileType: updatedProfile.fileType || "",
+        originalFileName: updatedProfile.originalFileName || "",
+      }));
+      setProfileFile(null);
+      toast.success("Profile updated successfully");
+    } catch (error) {
+      console.error("Profile update failed:", error);
+      toast.error(error.response?.data?.message || "Unable to update profile");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const inputClass =
@@ -42,6 +117,7 @@ function Profile() {
 
   return (
     <main className="bg-slate-50 px-4 py-8">
+      <ToastContainer />
       <section className="mx-auto max-w-5xl overflow-hidden rounded-lg border border-slate-200 bg-white shadow-xl">
         <div className="border-b border-slate-200 bg-slate-950 px-6 py-8 text-white sm:px-8">
           <p className="mb-3 inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-teal-100">
@@ -56,10 +132,13 @@ function Profile() {
           </p>
         </div>
 
-        <form className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[280px_1fr]">
+        <form
+          onSubmit={handleSubmit}
+          className="grid gap-8 p-6 sm:p-8 lg:grid-cols-[280px_1fr]"
+        >
           <aside className="rounded-lg border border-slate-200 bg-slate-50 p-5">
             <div className="mx-auto grid h-28 w-28 place-items-center overflow-hidden rounded-full bg-slate-950 text-3xl font-extrabold text-white">
-              {profile.photoUrl ? (
+              {profile.photoUrl && profile.fileType !== "application/pdf" ? (
                 <img
                   src={profile.photoUrl}
                   alt={`${displayName} profile`}
@@ -72,26 +151,33 @@ function Profile() {
 
             <label className="mt-5 block">
               <span className="mb-2 flex items-center gap-2 text-sm font-bold text-slate-600">
-                <FaCamera /> Profile image URL
+                <FaCamera /> Profile file
               </span>
               <input
-                name="photoUrl"
-                type="url"
-                value={profile.photoUrl}
-                onChange={handleChange}
-                placeholder="https://..."
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp,.pdf,image/jpeg,image/png,image/webp,application/pdf"
+                onChange={(event) => setProfileFile(event.target.files[0] || null)}
                 className={inputClass}
               />
             </label>
 
-            <div className="mt-5 rounded-lg bg-white p-4 text-sm font-semibold text-slate-500">
-              <div className="mb-2 flex items-center gap-2 font-extrabold text-slate-900">
-                <FaUserCircle /> Profile preview
+            {profileFile && (
+              <div className="mt-3 rounded-lg bg-white p-3 text-sm font-semibold text-slate-500">
+                Selected: {profileFile.name}
               </div>
-              <p>{displayName}</p>
-              <p className="capitalize">{user.role || "member"}</p>
-              <p className="truncate">{profile.email}</p>
-            </div>
+            )}
+
+            {profile.photoUrl && profile.fileType === "application/pdf" && (
+              <a
+                href={profile.photoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-lg border border-slate-300 px-3 py-2 text-sm font-extrabold text-slate-900 transition hover:border-slate-900"
+              >
+                <FaFilePdf /> View uploaded PDF
+              </a>
+            )}
+
           </aside>
 
           <div className="space-y-8">
@@ -256,10 +342,11 @@ function Profile() {
 
             <div className="flex justify-end border-t border-slate-200 pt-6">
               <button
-                type="button"
+                type="submit"
+                disabled={saving}
                 className="inline-flex min-h-[46px] items-center gap-2 rounded-lg bg-blue-700 px-6 font-extrabold text-white transition hover:bg-blue-800"
               >
-                <FaSave /> Save Profile
+                <FaSave /> {saving ? "Saving..." : "Save Profile"}
               </button>
             </div>
           </div>

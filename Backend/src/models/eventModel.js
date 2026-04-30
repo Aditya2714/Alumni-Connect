@@ -13,6 +13,18 @@ const eventSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  time: {
+    type: String,
+    default: "10:00 AM",
+  },
+  type: {
+    type: String,
+    default: "Campus Event",
+  },
+  attendees: {
+    type: Number,
+    default: 0,
+  },
   description: {
     type: String,
     required: true,
@@ -22,8 +34,7 @@ const eventSchema = new mongoose.Schema({
     ref: "User",
     required: true,
   },
-  // You can add more fields as needed for your events
-});
+}, { timestamps: true });
 
 const Event = mongoose.model("Event", eventSchema);
 

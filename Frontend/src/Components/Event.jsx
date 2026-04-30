@@ -1,45 +1,66 @@
-import React, { useState } from "react";
-import { FaCalendarAlt, FaMapMarkerAlt, FaUsers } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  FaCalendarAlt,
+  FaEdit,
+  FaMapMarkerAlt,
+  FaPaperPlane,
+  FaTimes,
+  FaTrash,
+  FaUsers,
+} from "react-icons/fa";
+import { getUserData } from "../services/authService";
+
+const emptyEventForm = {
+  title: "",
+  date: "",
+  time: "",
+  location: "",
+  type: "Campus Event",
+  description: "",
+};
+
+const formatEventForUi = (event) => ({
+  id: event._id,
+  rawDate: event.date ? event.date.slice(0, 10) : "",
+  title: event.title,
+  date: new Date(event.date).toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  }),
+  time: event.time || "10:00 AM",
+  location: event.location,
+  type: event.type || "Campus Event",
+  attendees: event.attendees || 0,
+  status: "Register",
+  description: event.description,
+});
 
 function Event() {
-  const [events, setEvents] = useState([
-    {
-      id: 1,
-      title: "Alumni Leadership Summit",
-      date: "14 May 2026",
-      time: "10:00 AM",
-      location: "CMRIT Auditorium",
-      type: "Campus Event",
-      attendees: 128,
-      status: "Register",
-      description:
-        "A campus meet for alumni mentors, student leaders, and faculty coordinators.",
-    },
-    {
-      id: 2,
-      title: "Career Night: Tech & Product",
-      date: "28 May 2026",
-      time: "7:00 PM",
-      location: "Online",
-      type: "Webinar",
-      attendees: 86,
-      status: "Register",
-      description:
-        "An alumni-led discussion on product roles, software careers, and referrals.",
-    },
-    {
-      id: 3,
-      title: "Batch Reunion Mixer",
-      date: "08 Jun 2026",
-      time: "5:30 PM",
-      location: "Campus Lawn",
-      type: "Reunion",
-      attendees: 64,
-      status: "Registered",
-      description:
-        "A relaxed evening for alumni to reconnect with classmates and faculty.",
-    },
-  ]);
+  const user = getUserData() || {};
+  const isAdmin = user.role === "admin";
+  const [eventForm, setEventForm] = useState(emptyEventForm);
+  const [events, setEvents] = useState([]);
+  const [editingEventId, setEditingEventId] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchEvents = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get("/event/all");
+        const eventList = response.data.data.events.map(formatEventForUi);
+        setEvents(eventList);
+      } catch (error) {
+        console.error("Events fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchEvents();
+  }, []);
 
   const handleRegister = (eventId) => {
     setEvents((current) =>
@@ -58,6 +79,69 @@ function Event() {
     );
   };
 
+  const handleEventFormChange = (event) => {
+    const { name, value } = event.target;
+    setEventForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const handleSaveEvent = async (event) => {
+    event.preventDefault();
+    if (!eventForm.title.trim() || !eventForm.date || !eventForm.location.trim()) return;
+
+    try {
+      if (editingEventId) {
+        const response = await axios.patch(`/event/${editingEventId}`, eventForm);
+        const updatedEvent = formatEventForUi(response.data.data.event);
+        setEvents((current) =>
+          current.map((item) =>
+            item.id === editingEventId ? { ...updatedEvent, status: item.status } : item
+          )
+        );
+      } else {
+        const response = await axios.post("/event/create", {
+          ...eventForm,
+          attendees: 0,
+        });
+        const createdEvent = formatEventForUi(response.data.data.event);
+        setEvents((current) => [createdEvent, ...current]);
+      }
+      setEventForm(emptyEventForm);
+      setEditingEventId(null);
+    } catch (error) {
+      console.error("Event save failed:", error);
+    }
+  };
+
+  const handleEditEvent = (event) => {
+    setEditingEventId(event.id);
+    setEventForm({
+      title: event.title,
+      date: event.rawDate,
+      time: event.time,
+      location: event.location,
+      type: event.type,
+      description: event.description,
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingEventId(null);
+    setEventForm(emptyEventForm);
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    try {
+      await axios.delete(`/event/${eventId}`);
+      setEvents((current) => current.filter((event) => event.id !== eventId));
+      if (editingEventId === eventId) handleCancelEdit();
+    } catch (error) {
+      console.error("Event delete failed:", error);
+    }
+  };
+
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
+
   return (
     <main className="bg-slate-50 px-4 py-8">
       <section className="mx-auto max-w-6xl space-y-6">
@@ -72,6 +156,11 @@ function Event() {
             Stay connected with the CMRIT community through campus events,
             online sessions, and batch gatherings.
           </p>
+          {loading && (
+            <p className="mt-3 text-sm font-semibold text-teal-100">
+              Loading events from database...
+            </p>
+          )}
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
@@ -104,6 +193,98 @@ function Event() {
           </article>
         </div>
 
+        {isAdmin && (
+          <form
+            onSubmit={handleSaveEvent}
+            className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+          >
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                <FaCalendarAlt />
+              </div>
+              <div>
+                <h2 className="text-2xl font-extrabold text-slate-900">
+                  {editingEventId ? "Edit event" : "Post a new event"}
+                </h2>
+                <p className="text-sm font-semibold text-slate-500">
+                  {editingEventId
+                    ? "Update event details and publish the changes."
+                    : "Create campus meets, webinars, reunions, or alumni sessions."}
+                </p>
+              </div>
+            </div>
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <input
+                name="title"
+                value={eventForm.title}
+                onChange={handleEventFormChange}
+                placeholder="Event title"
+                className={inputClass}
+              />
+              <select
+                name="type"
+                value={eventForm.type}
+                onChange={handleEventFormChange}
+                className={inputClass}
+              >
+                <option>Campus Event</option>
+                <option>Webinar</option>
+                <option>Reunion</option>
+                <option>Workshop</option>
+                <option>Mentorship Session</option>
+              </select>
+              <input
+                name="date"
+                type="date"
+                value={eventForm.date}
+                onChange={handleEventFormChange}
+                className={inputClass}
+              />
+              <input
+                name="time"
+                value={eventForm.time}
+                onChange={handleEventFormChange}
+                placeholder="10:00 AM"
+                className={inputClass}
+              />
+              <input
+                name="location"
+                value={eventForm.location}
+                onChange={handleEventFormChange}
+                placeholder="CMRIT Auditorium / Online"
+                className={inputClass}
+              />
+              <textarea
+                name="description"
+                value={eventForm.description}
+                onChange={handleEventFormChange}
+                rows="3"
+                placeholder="Describe the event, audience, and purpose."
+                className={`${inputClass} md:col-span-2`}
+              />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                type="submit"
+                className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
+              >
+                <FaPaperPlane /> {editingEventId ? "Update Event" : "Publish Event"}
+              </button>
+              {editingEventId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-slate-300 px-5 font-extrabold text-slate-900 transition hover:border-slate-900"
+                >
+                  <FaTimes /> Cancel
+                </button>
+              )}
+            </div>
+          </form>
+        )}
+
         <section className="grid gap-4 lg:grid-cols-3">
           {events.map((event) => (
             <article
@@ -133,20 +314,50 @@ function Event() {
                 </p>
               </div>
 
-              <button
-                type="button"
-                onClick={() => handleRegister(event.id)}
-                className={`mt-5 inline-flex min-h-[42px] w-full items-center justify-center rounded-lg px-4 font-extrabold transition ${
-                  event.status === "Registered"
-                    ? "bg-teal-50 text-teal-700 hover:bg-teal-100"
-                    : "bg-blue-700 text-white hover:bg-blue-800"
-                }`}
-              >
-                {event.status}
-              </button>
+              {isAdmin ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEditEvent(event)}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white transition hover:bg-blue-800"
+                  >
+                    <FaEdit /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteEvent(event.id)}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 font-extrabold text-red-700 transition hover:bg-red-100"
+                  >
+                    <FaTrash /> Delete
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => handleRegister(event.id)}
+                  className={`mt-5 inline-flex min-h-[42px] w-full items-center justify-center rounded-lg px-4 font-extrabold transition ${
+                    event.status === "Registered"
+                      ? "bg-teal-50 text-teal-700 hover:bg-teal-100"
+                      : "bg-blue-700 text-white hover:bg-blue-800"
+                  }`}
+                >
+                  {event.status}
+                </button>
+              )}
             </article>
           ))}
         </section>
+
+        {!loading && !events.length && (
+          <section className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-2xl font-extrabold text-slate-900">
+              No events posted yet
+            </h2>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Events will appear here after an admin publishes them.
+            </p>
+          </section>
+        )}
       </section>
     </main>
   );

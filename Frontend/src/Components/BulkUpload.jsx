@@ -1,69 +1,204 @@
-import React, { useState } from 'react';
-import { FaUpload } from 'react-icons/fa';
-import { getLoggedIn } from '../services/authService';
-import NotLoggedIn from './helper/NotLoggedIn';
+import React, { useState } from "react";
+import axios from "axios";
+import { FaFileCsv, FaUpload } from "react-icons/fa";
+import { getLoggedIn } from "../services/authService";
+import NotLoggedIn from "./helper/NotLoggedIn";
+
+const requiredColumns = [
+  "email",
+  "firstName",
+  "lastName",
+  "startYear",
+  "endYear",
+  "degree",
+  "branch",
+  "rollNumber",
+];
 
 const BulkUpload = () => {
   const loggedIn = getLoggedIn();
   const [selectedFile, setSelectedFile] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState("");
 
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
+  const handleFileChange = (event) => {
+    const file = event.target.files[0];
     setSelectedFile(file);
+    setResult(null);
+    setError("");
   };
 
-  const handleUpload = async () => {
-    
-    if (selectedFile) {
-      console.log('File uploaded:', selectedFile);
-    
-    } else {
-      console.log('No file selected');
+  const handleUpload = async (event) => {
+    event.preventDefault();
+
+    if (!selectedFile) {
+      setError("Please choose a CSV file first.");
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", selectedFile);
+    setUploading(true);
+    setError("");
+
+    try {
+      const response = await axios.post("/bulk/bulkImport", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      setResult(response.data.data);
+      setSelectedFile(null);
+      event.target.reset();
+    } catch (uploadError) {
+      setError(uploadError.response?.data?.message || "Bulk import failed.");
+    } finally {
+      setUploading(false);
     }
   };
 
+  const inputClass =
+    "w-full rounded-lg border border-slate-300 px-4 py-3 text-slate-900 outline-none transition file:mr-4 file:rounded-md file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:font-bold file:text-blue-700 focus:border-blue-700 focus:ring-4 focus:ring-blue-100";
+
   return (
-    <div className="max-w-md my-20 mx-auto p-6">
+    <main className="bg-slate-50 px-4 py-8">
       {loggedIn ? (
-        <div>
-        <form onClick={handleUpload} encType='multipart/form-data' >
-        <h2 className="text-2xl font-bold mb-4 text-center">Bulk Import Alumni to Register </h2>
-        <div className="mb-4 ">
-        <label htmlFor="fileInput" className="block text-sm font-medium text-gray-600">
-          Choose a file
-        </label>
-        <input
-          id="fileInput"
-          type="file"
-          accept=".csv, .xlsx, .xls"
-          className="mt-1 p-2 border w-full border-gray-300 rounded-md"
-          onChange={handleFileChange}
-        />
-      </div>
+        <section className="mx-auto max-w-5xl space-y-6">
+          <div className="rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-xl md:p-8">
+            <p className="mb-3 inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-teal-100">
+              Admin import
+            </p>
+            <h1 className="text-3xl font-extrabold tracking-normal md:text-4xl">
+              Bulk import alumni records.
+            </h1>
+            <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base">
+              Upload a CSV exported from Google Forms, Google Sheets, or Excel.
+              The records will be added directly to Users and Alumni collections.
+            </p>
+          </div>
 
-      {selectedFile && (
-        <div className="mb-4">
-          <h4 className="text-lg font-semibold mb-2">Selected File:</h4>
-          <p className="text-gray-600">{selectedFile.name}</p>
-        </div>
+          <div className="grid gap-6 lg:grid-cols-[0.95fr_1.05fr]">
+            <form
+              onSubmit={handleUpload}
+              encType="multipart/form-data"
+              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
+            >
+              <div className="mb-5 flex items-center gap-3">
+                <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                  <FaFileCsv />
+                </div>
+                <div>
+                  <h2 className="text-2xl font-extrabold text-slate-900">
+                    Upload CSV file
+                  </h2>
+                  <p className="text-sm font-semibold text-slate-500">
+                    Use `.csv` format for direct database import.
+                  </p>
+                </div>
+              </div>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-600">
+                  Choose CSV
+                </span>
+                <input
+                  type="file"
+                  accept=".csv,text/csv"
+                  className={inputClass}
+                  onChange={handleFileChange}
+                />
+              </label>
+
+              {selectedFile && (
+                <div className="mt-4 rounded-lg bg-slate-50 p-4 text-sm font-semibold text-slate-600">
+                  Selected file: {selectedFile.name}
+                </div>
+              )}
+
+              {error && (
+                <div className="mt-4 rounded-lg bg-red-50 p-4 text-sm font-bold text-red-700">
+                  {error}
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={uploading}
+                className="mt-5 inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-slate-400"
+              >
+                <FaUpload /> {uploading ? "Importing..." : "Import Alumni"}
+              </button>
+            </form>
+
+            <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+              <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+                CSV format
+              </p>
+              <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
+                Required columns
+              </h2>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {requiredColumns.map((column) => (
+                  <span
+                    key={column}
+                    className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700"
+                  >
+                    {column}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-5 text-sm font-semibold leading-6 text-slate-500">
+                Optional columns supported: password, company, designation,
+                location. If password is missing, the default password will be
+                `alumni123`.
+              </p>
+
+              {result && (
+                <div className="mt-6 rounded-lg border border-slate-200 bg-slate-50 p-4">
+                  <h3 className="font-extrabold text-slate-900">
+                    Import summary
+                  </h3>
+                  <div className="mt-3 grid gap-3 sm:grid-cols-2">
+                    <div className="rounded-lg bg-white p-4">
+                      <p className="text-sm font-bold text-slate-500">
+                        Imported
+                      </p>
+                      <strong className="mt-1 block text-2xl text-slate-900">
+                        {result.imported}
+                      </strong>
+                    </div>
+                    <div className="rounded-lg bg-white p-4">
+                      <p className="text-sm font-bold text-slate-500">
+                        Skipped
+                      </p>
+                      <strong className="mt-1 block text-2xl text-slate-900">
+                        {result.skipped}
+                      </strong>
+                    </div>
+                  </div>
+                  {!!result.errors?.length && (
+                    <div className="mt-4 space-y-2">
+                      {result.errors.slice(0, 5).map((item) => (
+                        <p
+                          key={`${item.line}-${item.reason}`}
+                          className="text-sm font-semibold text-slate-500"
+                        >
+                          Line {item.line}: {item.reason}
+                          {item.email ? ` (${item.email})` : ""}
+                        </p>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </section>
+          </div>
+        </section>
+      ) : (
+        <NotLoggedIn text="Bulk Import" />
       )}
-
-      <button
-        className=" w-full flex items-center justify-center  py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-black hover:bg-black-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
-        type='submit'
-        // onClick={handleUpload}
-      >
-      <FaUpload className="inline-block mr-2 mt-1" />
-        Upload
-
-      </button>
-    </form>
-      
-    </div>
-  ) : (
-    <NotLoggedIn text="Bulk Import"/>
-  )}
-  </div>
+    </main>
   );
 };
 

@@ -43,7 +43,14 @@ router.post("/", async (req, res) => {
       });
     }
 
-    const user = new User({ name, email, password, role });
+    const user = new User({
+      name,
+      email,
+      password,
+      role,
+      isApproved: role === "admin",
+      approvalStatus: role === "admin" ? "approved" : "pending",
+    });
     await user.save();
 
     if (role === "admin") {

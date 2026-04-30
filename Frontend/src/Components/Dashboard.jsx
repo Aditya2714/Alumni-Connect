@@ -15,6 +15,8 @@ import {
   FaUserPlus,
   FaUsers,
 } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import axios from "axios";
 import { Link, NavLink } from "react-router-dom";
 import { getUserData } from "../services/authService";
 
@@ -62,13 +64,13 @@ const navByRole = {
   admin: [
     ["Dashboard", "/dashboard", FaIdBadge],
     ["Profile", "/profile", FaUserCircle],
-    ["Manage Alumni", "/alumni-directory", FaSearch],
+    ["Manage Alumni", "/manage-alumni", FaSearch],
     ["Bulk Import", "/bulk-upload", FaUpload],
-    ["Approvals", "/connections", FaUserCheck],
+    ["Approvals", "/approvals", FaUserCheck],
     ["Announcements", "/announcements", FaBullhorn],
     ["Events", "/events", FaCalendarAlt],
     ["Jobs", "/jobs", FaBriefcase],
-    ["Reports", "/forum", FaComments],
+    ["Reports", "/reports", FaComments],
     ["Recognition", "/recognition", FaAward],
   ],
   faculty: [
@@ -128,12 +130,12 @@ const actionsByRole = {
     ["Recognition", "Celebrate alumni achievements.", "/recognition", FaAward],
   ],
   admin: [
+    ["Manage Alumni", "Edit alumni profiles and remove invalid records.", "/manage-alumni", FaSearch],
     ["Bulk Import", "Upload student and alumni records.", "/bulk-upload", FaUpload],
-    ["Approvals", "Review registrations and submissions.", "/connections", FaUserCheck],
+    ["Approvals", "Review alumni registrations before login access.", "/approvals", FaUserCheck],
     ["Announcements", "Publish targeted updates.", "/announcements", FaBullhorn],
     ["Manage Jobs", "Moderate career opportunities.", "/jobs", FaBriefcase],
-    ["Reports", "Review activity and engagement.", "/forum", FaComments],
-    ["Recognition", "Manage alumni highlights.", "/recognition", FaAward],
+    ["Reports", "Review live platform activity and engagement.", "/reports", FaComments],
   ],
   faculty: [
     ["Guide Mentorship", "Review mentorship requests.", "/mentorship", FaHandsHelping],
@@ -216,6 +218,7 @@ function Dashboard() {
     branch,
     degree,
     endYear,
+    imageUrl,
     profileImage,
     avatar,
   } = user;
@@ -233,12 +236,35 @@ function Dashboard() {
     .join("")
     .slice(0, 2)
     .toUpperCase();
-  const photoUrl = profileImage || avatar || user.image || user.photoUrl;
+  const photoUrl = imageUrl || profileImage || avatar || user.image || user.photoUrl;
   const copy = roleCopy[activeRole];
   const sidebarLinks = navByRole[activeRole];
-  const stats = statsByRole[activeRole];
+  const [adminOverview, setAdminOverview] = useState(null);
+  const stats =
+    activeRole === "admin" && adminOverview
+      ? [
+          ["Alumni Records", adminOverview.alumni, "registered alumni profiles"],
+          ["Pending Review", adminOverview.pendingAlumni, "accounts awaiting approval"],
+          ["Events & Jobs", adminOverview.events + adminOverview.jobs, "active platform listings"],
+        ]
+      : statsByRole[activeRole];
   const quickActions = actionsByRole[activeRole];
   const panels = panelsByRole[activeRole];
+
+  useEffect(() => {
+    const fetchAdminOverview = async () => {
+      if (activeRole !== "admin") return;
+
+      try {
+        const response = await axios.get("/admin/overview");
+        setAdminOverview(response.data.data.overview);
+      } catch (error) {
+        console.error("Admin overview fetch failed:", error);
+      }
+    };
+
+    fetchAdminOverview();
+  }, [activeRole]);
 
   const profileDetails =
     activeRole === "admin"
@@ -294,7 +320,11 @@ function Dashboard() {
         </aside>
 
         <div className="space-y-6">
-          <section className="grid gap-5 rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-xl md:grid-cols-[1fr_320px] md:p-8">
+          <section
+            className={`grid gap-5 rounded-lg border border-slate-200 bg-slate-950 p-6 text-white shadow-xl md:p-8 ${
+              activeRole === "admin" ? "" : "md:grid-cols-[1fr_320px]"
+            }`}
+          >
             <div>
               <p className="mb-3 inline-flex rounded-full border border-white/15 bg-white/5 px-3 py-1 text-[0.68rem] font-extrabold uppercase tracking-[0.14em] text-teal-100">
                 {copy.eyebrow}
@@ -307,39 +337,41 @@ function Dashboard() {
               </p>
             </div>
 
-            <div className="rounded-lg border border-white/10 bg-white/5 p-4">
-              <div className="flex items-center gap-4">
-                {photoUrl ? (
-                  <img
-                    src={photoUrl}
-                    alt={`${displayName} profile`}
-                    className="h-16 w-16 rounded-full object-cover ring-2 ring-white/20"
-                  />
-                ) : (
-                  <div className="grid h-16 w-16 place-items-center rounded-full bg-white text-lg font-extrabold text-slate-950">
-                    {initials}
+            {activeRole !== "admin" && (
+              <div className="rounded-lg border border-white/10 bg-white/5 p-4">
+                <div className="flex items-center gap-4">
+                  {photoUrl ? (
+                    <img
+                      src={photoUrl}
+                      alt={`${displayName} profile`}
+                      className="h-16 w-16 rounded-full object-cover ring-2 ring-white/20"
+                    />
+                  ) : (
+                    <div className="grid h-16 w-16 place-items-center rounded-full bg-white text-lg font-extrabold text-slate-950">
+                      {initials}
+                    </div>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate font-extrabold">{displayName}</p>
+                    <p className="text-sm font-semibold capitalize text-slate-300">{activeRole}</p>
+                    <p className="truncate text-xs font-semibold text-slate-400">{email}</p>
                   </div>
-                )}
-                <div className="min-w-0">
-                  <p className="truncate font-extrabold">{displayName}</p>
-                  <p className="text-sm font-semibold capitalize text-slate-300">{activeRole}</p>
-                  <p className="truncate text-xs font-semibold text-slate-400">{email}</p>
                 </div>
+                <div className="mt-4 grid gap-2 text-sm font-semibold text-slate-300">
+                  {profileDetails.map(([label, value]) => (
+                    <p key={label}>
+                      {label}: {value}
+                    </p>
+                  ))}
+                </div>
+                <Link
+                  to="/profile"
+                  className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-white px-4 text-sm font-extrabold text-slate-950 transition hover:bg-teal-100"
+                >
+                  Edit Profile
+                </Link>
               </div>
-              <div className="mt-4 grid gap-2 text-sm font-semibold text-slate-300">
-                {profileDetails.map(([label, value]) => (
-                  <p key={label}>
-                    {label}: {value}
-                  </p>
-                ))}
-              </div>
-              <Link
-                to="/profile"
-                className="mt-4 inline-flex min-h-[40px] w-full items-center justify-center rounded-lg bg-white px-4 text-sm font-extrabold text-slate-950 transition hover:bg-teal-100"
-              >
-                Edit Profile
-              </Link>
-            </div>
+            )}
           </section>
 
           <div className="grid gap-4 md:grid-cols-3">

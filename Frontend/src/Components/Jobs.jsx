@@ -1,69 +1,112 @@
-import React, { useState } from "react";
-import { FaBriefcase, FaMapMarkerAlt, FaPaperPlane, FaPlus } from "react-icons/fa";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
+import {
+  FaBriefcase,
+  FaEdit,
+  FaMapMarkerAlt,
+  FaPaperPlane,
+  FaPlus,
+  FaTimes,
+  FaTrash,
+} from "react-icons/fa";
+import { getUserData } from "../services/authService";
+
+const emptyJobForm = {
+  title: "",
+  company: "",
+  location: "",
+  type: "Full-time",
+  description: "",
+  status: "Open",
+};
+
+const formatJobForUi = (job) => ({
+  id: job._id,
+  title: job.title,
+  company: job.company || "Not specified",
+  location: job.location || "Not specified",
+  type: job.type || "Full-time",
+  description: job.description,
+  status: job.status || "Open",
+});
 
 function Jobs() {
-  const [jobForm, setJobForm] = useState({
-    title: "",
-    company: "",
-    location: "",
-    type: "Full-time",
-    description: "",
-  });
+  const user = getUserData() || {};
+  const isAdmin = user.role === "admin";
+  const [jobForm, setJobForm] = useState(emptyJobForm);
+  const [jobs, setJobs] = useState([]);
+  const [editingJobId, setEditingJobId] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  const [jobs, setJobs] = useState([
-    {
-      id: 1,
-      title: "Backend Developer",
-      company: "FinEdge",
-      location: "Pune",
-      type: "Full-time",
-      description: "Node.js role shared by a CMRIT alumnus. MongoDB experience preferred.",
-      status: "Referral available",
-    },
-    {
-      id: 2,
-      title: "Data Analyst",
-      company: "Nexora",
-      location: "Remote",
-      type: "Full-time",
-      description: "Early-career analytics role with SQL, dashboards, and reporting.",
-      status: "Open",
-    },
-    {
-      id: 3,
-      title: "Marketing Intern",
-      company: "BrightHire",
-      location: "Bengaluru",
-      type: "Internship",
-      description: "Growth and content internship suitable for final-year students.",
-      status: "New",
-    },
-  ]);
+  useEffect(() => {
+    const fetchJobs = async () => {
+      setLoading(true);
+      try {
+        const response = await axios.get("/jobs/all");
+        setJobs(response.data.data.jobs.map(formatJobForUi));
+      } catch (error) {
+        console.error("Jobs fetch failed:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobs();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setJobForm((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!jobForm.title.trim() || !jobForm.company.trim()) return;
 
-    setJobs((current) => [
-      {
-        id: Date.now(),
-        ...jobForm,
-        status: "Draft",
-      },
-      ...current,
-    ]);
+    try {
+      if (editingJobId) {
+        const response = await axios.patch(`/jobs/${editingJobId}`, jobForm);
+        const updatedJob = formatJobForUi(response.data.data.job);
+        setJobs((current) =>
+          current.map((job) => (job.id === editingJobId ? updatedJob : job))
+        );
+      } else {
+        const response = await axios.post("/jobs/create", jobForm);
+        const createdJob = formatJobForUi(response.data.data.job);
+        setJobs((current) => [createdJob, ...current]);
+      }
+      setJobForm(emptyJobForm);
+      setEditingJobId(null);
+    } catch (error) {
+      console.error("Job save failed:", error);
+    }
+  };
+
+  const handleEditJob = (job) => {
+    setEditingJobId(job.id);
     setJobForm({
-      title: "",
-      company: "",
-      location: "",
-      type: "Full-time",
-      description: "",
+      title: job.title,
+      company: job.company,
+      location: job.location,
+      type: job.type,
+      description: job.description,
+      status: job.status,
     });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingJobId(null);
+    setJobForm(emptyJobForm);
+  };
+
+  const handleDeleteJob = async (jobId) => {
+    try {
+      await axios.delete(`/jobs/${jobId}`);
+      setJobs((current) => current.filter((job) => job.id !== jobId));
+      if (editingJobId === jobId) handleCancelEdit();
+    } catch (error) {
+      console.error("Job delete failed:", error);
+    }
   };
 
   const inputClass =
@@ -83,9 +126,14 @@ function Jobs() {
             Browse openings, referral-friendly roles, internships, and career
             leads from the CMRIT network.
           </p>
+          {loading && (
+            <p className="mt-3 text-sm font-semibold text-teal-100">
+              Loading jobs from database...
+            </p>
+          )}
         </div>
 
-        <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+        {isAdmin && (
           <form
             onSubmit={handleSubmit}
             className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
@@ -96,15 +144,17 @@ function Jobs() {
               </div>
               <div>
                 <h2 className="text-2xl font-extrabold text-slate-900">
-                  Post an opportunity
+                  {editingJobId ? "Edit opportunity" : "Post an opportunity"}
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
-                  Share a job, internship, or referral lead.
+                  {editingJobId
+                    ? "Update this career opportunity."
+                    : "Share a job, internship, or referral lead."}
                 </p>
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
               <input
                 name="title"
                 value={jobForm.title}
@@ -119,77 +169,128 @@ function Jobs() {
                 placeholder="Company"
                 className={inputClass}
               />
-              <div className="grid gap-4 md:grid-cols-2">
-                <input
-                  name="location"
-                  value={jobForm.location}
-                  onChange={handleChange}
-                  placeholder="Location"
-                  className={inputClass}
-                />
-                <select
-                  name="type"
-                  value={jobForm.type}
-                  onChange={handleChange}
-                  className={inputClass}
-                >
-                  <option>Full-time</option>
-                  <option>Internship</option>
-                  <option>Contract</option>
-                  <option>Referral</option>
-                </select>
-              </div>
+              <input
+                name="location"
+                value={jobForm.location}
+                onChange={handleChange}
+                placeholder="Location"
+                className={inputClass}
+              />
+              <select
+                name="type"
+                value={jobForm.type}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option>Full-time</option>
+                <option>Internship</option>
+                <option>Contract</option>
+                <option>Referral</option>
+              </select>
+              <select
+                name="status"
+                value={jobForm.status}
+                onChange={handleChange}
+                className={inputClass}
+              >
+                <option>Open</option>
+                <option>Referral available</option>
+                <option>New</option>
+                <option>Closed</option>
+              </select>
               <textarea
                 name="description"
                 value={jobForm.description}
                 onChange={handleChange}
-                rows="5"
+                rows="4"
                 placeholder="Role details, skills, eligibility, or application link."
-                className={inputClass}
+                className={`${inputClass} md:col-span-2`}
               />
+            </div>
+
+            <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="submit"
-                className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
+                className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
               >
-                <FaPaperPlane /> Save Job Post
+                <FaPaperPlane /> {editingJobId ? "Update Job" : "Save Job Post"}
               </button>
+              {editingJobId && (
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-slate-300 px-5 font-extrabold text-slate-900 transition hover:border-slate-900"
+                >
+                  <FaTimes /> Cancel
+                </button>
+              )}
             </div>
           </form>
+        )}
 
-          <section className="space-y-4">
-            {jobs.map((job) => (
-              <article
-                key={job.id}
-                className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
-              >
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <span className="mb-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      {job.status}
-                    </span>
-                    <h2 className="text-xl font-extrabold text-slate-900">
-                      {job.title}
-                    </h2>
-                    <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
-                      <FaBriefcase className="text-blue-700" /> {job.company} ·{" "}
-                      {job.type}
-                    </p>
-                    <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
-                      <FaMapMarkerAlt className="text-blue-700" />{" "}
-                      {job.location || "Location not specified"}
-                    </p>
-                  </div>
+        <section className="grid gap-4 lg:grid-cols-3">
+          {jobs.map((job) => (
+            <article
+              key={job.id}
+              className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <span className="mb-3 inline-flex rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                    {job.status}
+                  </span>
+                  <h2 className="text-xl font-extrabold text-slate-900">
+                    {job.title}
+                  </h2>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
+                    <FaBriefcase className="text-blue-700" /> {job.company} ·{" "}
+                    {job.type}
+                  </p>
+                  <p className="mt-1 flex items-center gap-2 text-sm font-semibold text-slate-500">
+                    <FaMapMarkerAlt className="text-blue-700" />{" "}
+                    {job.location || "Location not specified"}
+                  </p>
                 </div>
-                <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
-                  {job.description || "No description added yet."}
-                </p>
+              </div>
+              <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
+                {job.description || "No description added yet."}
+              </p>
+              {isAdmin ? (
+                <div className="mt-5 grid gap-3 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => handleEditJob(job)}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white transition hover:bg-blue-800"
+                  >
+                    <FaEdit /> Edit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteJob(job.id)}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 font-extrabold text-red-700 transition hover:bg-red-100"
+                  >
+                    <FaTrash /> Delete
+                  </button>
+                </div>
+              ) : (
                 <button className="mt-5 rounded-lg border border-slate-300 px-4 py-2 text-sm font-extrabold text-slate-900 transition hover:border-slate-900">
                   View Details
                 </button>
-              </article>
-            ))}
+              )}
+            </article>
+          ))}
+        </section>
+
+        {!loading && !jobs.length && (
+          <section className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center shadow-sm">
+            <h2 className="text-2xl font-extrabold text-slate-900">
+              No jobs posted yet
+            </h2>
+            <p className="mt-2 text-sm font-semibold text-slate-500">
+              Job opportunities will appear here after an admin posts them.
+            </p>
           </section>
-        </div>
+        )}
       </section>
     </main>
   );

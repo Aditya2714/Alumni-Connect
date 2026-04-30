@@ -8,15 +8,37 @@ import {
 } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { getLoggedIn } from "../services/authService";
+import { getLoggedIn, getUserData } from "../services/authService";
 import { logout } from "../features/authSlice";
 
 function Topbar() {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const loggedIn = getLoggedIn();
+  const user = getUserData() || {};
   const dispatch = useDispatch();
+  const displayName =
+    [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+    user.adminName ||
+    user.name ||
+    "Profile";
+  const initials = displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const profilePhoto =
+    user.fileType !== "application/pdf"
+      ? user.imageUrl || user.profileImage || user.avatar || user.image || user.photoUrl
+      : "";
 
   const closeMobileMenu = () => setMobileMenuOpen(false);
+  const handleLogout = () => {
+    dispatch(logout());
+    setShowLogoutConfirm(false);
+    closeMobileMenu();
+  };
 
   const linkClass = ({ isActive }) =>
     `flex items-center gap-1 rounded-lg px-2 py-2 text-sm font-bold transition ${
@@ -60,13 +82,26 @@ function Topbar() {
                 <FaHome /> Dashboard
               </NavLink>
               <NavLink to="/profile" className={linkClass} onClick={closeMobileMenu}>
-                <FaUserCircle /> Profile
+                {profilePhoto ? (
+                  <img
+                    src={profilePhoto}
+                    alt={`${displayName} profile`}
+                    className="h-8 w-8 rounded-full object-cover ring-2 ring-blue-100"
+                  />
+                ) : initials ? (
+                  <span className="grid h-8 w-8 place-items-center rounded-full bg-slate-950 text-[0.7rem] font-extrabold text-white">
+                    {initials}
+                  </span>
+                ) : (
+                  <FaUserCircle />
+                )}
+                Profile
               </NavLink>
               <button
                 type="button"
                 onClick={() => {
-                  dispatch(logout());
                   closeMobileMenu();
+                  setShowLogoutConfirm(true);
                 }}
                 className="rounded-lg border border-slate-900 px-4 py-2 text-sm font-bold text-slate-900 transition hover:bg-slate-900 hover:text-white"
               >
@@ -96,6 +131,37 @@ function Topbar() {
           )}
         </nav>
       </div>
+      {showLogoutConfirm && (
+        <div className="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 px-4 backdrop-blur-sm">
+          <section className="w-full max-w-sm rounded-lg border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-blue-50 text-blue-700">
+              <FaUserCircle />
+            </div>
+            <h2 className="mt-4 text-center text-2xl font-extrabold text-slate-900">
+              Logout?
+            </h2>
+            <p className="mt-2 text-center text-sm font-semibold leading-6 text-slate-500">
+              Do you really want to logout from Alumni Connect?
+            </p>
+            <div className="mt-6 grid gap-3 sm:grid-cols-2">
+              <button
+                type="button"
+                onClick={() => setShowLogoutConfirm(false)}
+                className="inline-flex min-h-[42px] items-center justify-center rounded-lg border border-slate-300 px-4 font-extrabold text-slate-900 transition hover:border-slate-900"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="inline-flex min-h-[42px] items-center justify-center rounded-lg bg-slate-950 px-4 font-extrabold text-white transition hover:bg-blue-800"
+              >
+                Logout
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
     </header>
   );
 }

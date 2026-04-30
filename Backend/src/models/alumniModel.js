@@ -81,6 +81,12 @@ const AlumniSchema = new mongoose.Schema(
       },
     },
     imageUrl: String,
+    fileType: String,
+    originalFileName: String,
+    company: String,
+    designation: String,
+    location: String,
+    bio: String,
     skills: [String],
   },
   {
