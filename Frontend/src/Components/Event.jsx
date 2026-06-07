@@ -33,7 +33,7 @@ const formatEventForUi = (event) => ({
   location: event.location,
   type: event.type || "Campus Event",
   attendees: event.attendees || 0,
-  status: "Register",
+  status: event.isRegistered ? "Registered" : "Register",
   description: event.description,
 });
 
@@ -62,21 +62,16 @@ function Event() {
     fetchEvents();
   }, []);
 
-  const handleRegister = (eventId) => {
-    setEvents((current) =>
-      current.map((event) =>
-        event.id === eventId
-          ? {
-              ...event,
-              status: event.status === "Registered" ? "Register" : "Registered",
-              attendees:
-                event.status === "Registered"
-                  ? Math.max(event.attendees - 1, 0)
-                  : event.attendees + 1,
-            }
-          : event
-      )
-    );
+  const handleRegister = async (eventId) => {
+    try {
+      const response = await axios.post(`/event/${eventId}/register`);
+      const updatedEvent = formatEventForUi(response.data.data.event);
+      setEvents((current) =>
+        current.map((event) => (event.id === eventId ? updatedEvent : event))
+      );
+    } catch (error) {
+      console.error("Event registration failed:", error);
+    }
   };
 
   const handleEventFormChange = (event) => {

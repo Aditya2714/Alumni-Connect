@@ -27,6 +27,17 @@ const getAdminOverview = async (req, res) => {
       announcements,
       recognitions,
       pendingAlumni,
+      approvedAlumniUsers,
+      rejectedAlumniUsers,
+      alumniByBranch,
+      alumniByBatch,
+      jobsByStatus,
+      eventsByType,
+      announcementsByAudience,
+      recentAlumni,
+      recentEvents,
+      recentJobs,
+      recentAnnouncements,
     ] = await Promise.all([
       User.countDocuments(),
       Alumni.countDocuments(),
@@ -40,6 +51,46 @@ const getAdminOverview = async (req, res) => {
         isApproved: false,
         approvalStatus: { $ne: "rejected" },
       }),
+      User.countDocuments({
+        role: "alumni",
+        isApproved: true,
+        approvalStatus: "approved",
+      }),
+      User.countDocuments({
+        role: "alumni",
+        approvalStatus: "rejected",
+      }),
+      Alumni.aggregate([
+        { $group: { _id: "$branch", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+        { $limit: 6 },
+      ]),
+      Alumni.aggregate([
+        { $group: { _id: "$endYear", count: { $sum: 1 } } },
+        { $sort: { _id: -1 } },
+        { $limit: 6 },
+      ]),
+      Job.aggregate([
+        { $group: { _id: "$status", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+      ]),
+      Event.aggregate([
+        { $group: { _id: "$type", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+        { $limit: 6 },
+      ]),
+      Announcement.aggregate([
+        { $group: { _id: "$audience", count: { $sum: 1 } } },
+        { $sort: { count: -1, _id: 1 } },
+        { $limit: 6 },
+      ]),
+      Alumni.find()
+        .select("firstName lastName email branch endYear company designation createdAt")
+        .sort({ createdAt: -1 })
+        .limit(5),
+      Event.find().select("title date type attendees createdAt").sort({ createdAt: -1 }).limit(5),
+      Job.find().select("title company status vacancy createdAt").sort({ createdAt: -1 }).limit(5),
+      Announcement.find().select("title audience createdAt").sort({ createdAt: -1 }).limit(5),
     ]);
 
     return res.status(200).json({
@@ -54,6 +105,36 @@ const getAdminOverview = async (req, res) => {
           announcements,
           recognitions,
           pendingAlumni,
+          approvedAlumniUsers,
+          rejectedAlumniUsers,
+          breakdowns: {
+            alumniByBranch: alumniByBranch.map((item) => ({
+              label: item._id || "Not added",
+              count: item.count,
+            })),
+            alumniByBatch: alumniByBatch.map((item) => ({
+              label: item._id || "Not added",
+              count: item.count,
+            })),
+            jobsByStatus: jobsByStatus.map((item) => ({
+              label: item._id || "Not added",
+              count: item.count,
+            })),
+            eventsByType: eventsByType.map((item) => ({
+              label: item._id || "Not added",
+              count: item.count,
+            })),
+            announcementsByAudience: announcementsByAudience.map((item) => ({
+              label: item._id || "Not added",
+              count: item.count,
+            })),
+          },
+          recent: {
+            alumni: recentAlumni,
+            events: recentEvents,
+            jobs: recentJobs,
+            announcements: recentAnnouncements,
+          },
         },
       },
     });

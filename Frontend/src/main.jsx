@@ -24,6 +24,7 @@ import Announcements from "./Components/SendMail.jsx";
 import BulkUpload from "./Components/BulkUpload.jsx";
 import AdminApprovals from "./Components/AdminApprovals.jsx";
 import AdminReports from "./Components/AdminReports.jsx";
+import AdminMentorship from "./Components/AdminMentorship.jsx";
 import ManageAlumni from "./Components/ManageAlumni.jsx";
 import SearchPeople from "./Components/SearchPeople.jsx";
 import Mentorship from "./Components/Meeting.jsx";
@@ -152,6 +153,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAdminTool>
             <AdminReports />
+          </RequireAdminTool>
+        ),
+      },
+      {
+        path: "/admin-mentorship",
+        element: (
+          <RequireAdminTool>
+            <AdminMentorship />
           </RequireAdminTool>
         ),
       },

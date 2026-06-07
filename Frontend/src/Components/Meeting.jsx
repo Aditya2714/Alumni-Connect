@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import axios from "axios";
 import { FaHandsHelping, FaPaperPlane } from "react-icons/fa";
 
 const topics = [
@@ -18,41 +19,45 @@ function Mentorship() {
     message: "",
   });
 
-  const [requests, setRequests] = useState([
-    {
-      id: 1,
-      topic: "Resume Review",
-      mode: "Email",
-      status: "Pending",
-      message: "Looking for feedback on my software engineering resume.",
-    },
-    {
-      id: 2,
-      topic: "Career Guidance",
-      mode: "Phone call",
-      status: "Accepted",
-      message: "Need guidance about moving from college projects to internships.",
-    },
-  ]);
+  const [requests, setRequests] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const fetchRequests = async () => {
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await axios.get("/mentorship");
+      setRequests(response.data.data.requests);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to load mentorship requests.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchRequests();
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
     setRequest((current) => ({ ...current, [name]: value }));
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
     if (!request.message.trim()) return;
 
-    setRequests((current) => [
-      {
-        id: Date.now(),
-        ...request,
-        status: "Pending",
-      },
-      ...current,
-    ]);
-    setRequest({ topic: topics[0], mode: "Flexible", message: "" });
+    try {
+      const response = await axios.post("/mentorship", request);
+      setRequests((current) => [response.data.data.request, ...current]);
+      setRequest({ topic: topics[0], mode: "Flexible", message: "" });
+      setMessage("Mentorship request submitted successfully.");
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to submit mentorship request.");
+    }
   };
 
   const inputClass =
@@ -158,10 +163,22 @@ function Mentorship() {
               Your mentorship requests
             </h2>
 
+            {loading && (
+              <p className="mt-5 rounded-lg bg-slate-50 p-4 text-sm font-bold text-slate-500">
+                Loading requests from database...
+              </p>
+            )}
+
+            {message && (
+              <p className="mt-5 rounded-lg bg-blue-50 p-4 text-sm font-bold text-blue-700">
+                {message}
+              </p>
+            )}
+
             <div className="mt-5 space-y-4">
               {requests.map((item) => (
                 <article
-                  key={item.id}
+                  key={item._id}
                   className="rounded-lg border border-slate-200 p-4"
                 >
                   <div className="flex flex-wrap items-start justify-between gap-3">
@@ -180,9 +197,19 @@ function Mentorship() {
                   <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
                     {item.message}
                   </p>
+                  {item.adminNote && (
+                    <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-500">
+                      Admin note: {item.adminNote}
+                    </p>
+                  )}
                 </article>
               ))}
             </div>
+            {!loading && !requests.length && (
+              <p className="mt-5 rounded-lg border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">
+                No mentorship requests yet.
+              </p>
+            )}
           </section>
         </div>
       </section>

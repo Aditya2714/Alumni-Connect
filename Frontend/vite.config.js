@@ -44,6 +44,22 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
       },
+      "/connections": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/mentorship": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/referrals": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/community": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
     },
   },
 });

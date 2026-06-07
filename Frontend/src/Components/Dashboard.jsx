@@ -67,6 +67,7 @@ const navByRole = {
     ["Manage Alumni", "/manage-alumni", FaSearch],
     ["Bulk Import", "/bulk-upload", FaUpload],
     ["Approvals", "/approvals", FaUserCheck],
+    ["Mentorship Requests", "/admin-mentorship", FaHandsHelping],
     ["Announcements", "/announcements", FaBullhorn],
     ["Events", "/events", FaCalendarAlt],
     ["Jobs", "/jobs", FaBriefcase],
@@ -133,8 +134,8 @@ const actionsByRole = {
     ["Manage Alumni", "Edit alumni profiles and remove invalid records.", "/manage-alumni", FaSearch],
     ["Bulk Import", "Upload student and alumni records.", "/bulk-upload", FaUpload],
     ["Approvals", "Review alumni registrations before login access.", "/approvals", FaUserCheck],
+    ["Mentorship Requests", "Review and update alumni mentorship requests.", "/admin-mentorship", FaHandsHelping],
     ["Announcements", "Publish targeted updates.", "/announcements", FaBullhorn],
-    ["Manage Jobs", "Moderate career opportunities.", "/jobs", FaBriefcase],
     ["Reports", "Review live platform activity and engagement.", "/reports", FaComments],
   ],
   faculty: [

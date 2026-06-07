@@ -8,6 +8,8 @@ import {
   FaChartBar,
   FaClock,
   FaDatabase,
+  FaLayerGroup,
+  FaSyncAlt,
   FaUserCheck,
   FaUsers,
 } from "react-icons/fa";
@@ -16,19 +18,19 @@ function AdminReports() {
   const [overview, setOverview] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    const fetchReports = async () => {
-      setLoading(true);
-      try {
-        const response = await axios.get("/admin/overview");
-        setOverview(response.data.data.overview);
-      } catch (error) {
-        console.error("Reports fetch failed:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchReports = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get("/admin/overview");
+      setOverview(response.data.data.overview);
+    } catch (error) {
+      console.error("Reports fetch failed:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchReports();
   }, []);
 
@@ -57,6 +59,29 @@ function AdminReports() {
   }, [overview]);
 
   const maxValue = Math.max(...metrics.map((metric) => Number(metric[1]) || 0), 1);
+  const approvalStats = [
+    ["Approved alumni", overview?.approvedAlumniUsers || 0, "bg-emerald-500"],
+    ["Pending review", overview?.pendingAlumni || 0, "bg-amber-500"],
+    ["Rejected", overview?.rejectedAlumniUsers || 0, "bg-red-500"],
+  ];
+  const approvalTotal = Math.max(
+    approvalStats.reduce((total, item) => total + Number(item[1] || 0), 0),
+    1
+  );
+  const breakdowns = overview?.breakdowns || {};
+  const computerScienceBranches = (breakdowns.alumniByBranch || []).filter((item) => {
+    const label = String(item.label || "").toLowerCase();
+    return (
+      label.includes("computer science") ||
+      label === "cse" ||
+      label.includes("cse")
+    );
+  });
+  const platformChartData = metrics
+    .filter(([label]) =>
+      ["Alumni Profiles", "Events", "Jobs", "Announcements", "Recognitions"].includes(label)
+    )
+    .map(([label, value]) => ({ label, count: Number(value) || 0 }));
 
   return (
     <main className="bg-slate-50 px-4 py-8">
@@ -77,6 +102,13 @@ function AdminReports() {
               Loading reports from database...
             </p>
           )}
+          <button
+            type="button"
+            onClick={fetchReports}
+            className="mt-5 inline-flex min-h-[42px] items-center gap-2 rounded-lg bg-white px-4 text-sm font-extrabold text-slate-950 transition hover:bg-teal-100"
+          >
+            <FaSyncAlt /> Refresh Reports
+          </button>
         </div>
 
         <section className="grid gap-4 md:grid-cols-3">
@@ -103,7 +135,73 @@ function AdminReports() {
           ))}
         </section>
 
-        <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
+        <section className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
+          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                <FaUserCheck />
+              </div>
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+                  Approval status
+                </p>
+                <h2 className="text-2xl font-extrabold text-slate-900">
+                  Alumni verification
+                </h2>
+              </div>
+            </div>
+
+            <div className="flex h-4 overflow-hidden rounded-full bg-slate-100">
+              {approvalStats.map(([label, value, color]) => (
+                <div
+                  key={label}
+                  className={color}
+                  style={{ width: `${(Number(value) / approvalTotal) * 100}%` }}
+                  title={`${label}: ${value}`}
+                />
+              ))}
+            </div>
+
+            <div className="mt-5 grid gap-3">
+              {approvalStats.map(([label, value, color]) => (
+                <div key={label} className="flex items-center justify-between text-sm font-bold text-slate-600">
+                  <span className="flex items-center gap-2">
+                    <span className={`h-3 w-3 rounded-full ${color}`} />
+                    {label}
+                  </span>
+                  <span>{value}</span>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+            <div className="mb-5 flex items-center gap-3">
+              <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
+                <FaLayerGroup />
+              </div>
+              <div>
+                <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+                  Alumni records
+                </p>
+                <h2 className="text-2xl font-extrabold text-slate-900">
+                  Alumni distribution
+                </h2>
+              </div>
+            </div>
+            <p className="mb-5 text-sm font-semibold leading-6 text-slate-500">
+              This shows how many alumni records are available in Computer
+              Science and Engineering and in each passing batch.
+            </p>
+
+            <div className="grid gap-5 md:grid-cols-2">
+              <BreakdownList title="Computer Science and Engineering" items={computerScienceBranches} />
+              <BreakdownList title="Alumni by passing year" items={breakdowns.alumniByBatch || []} />
+            </div>
+          </article>
+        </section>
+
+        <section>
           <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
             <div className="mb-5 flex items-center gap-3">
               <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-50 text-blue-700">
@@ -138,24 +236,107 @@ function AdminReports() {
               ))}
             </div>
           </article>
+        </section>
 
-          <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
-            <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
-              Review notes
-            </p>
-            <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
-              What this report proves
-            </h2>
-            <ul className="mt-5 space-y-3 text-sm font-semibold leading-6 text-slate-500">
-              <li>Admin can monitor real MongoDB-backed platform data.</li>
-              <li>Approval queue shows pending alumni verification load.</li>
-              <li>Events and jobs are tracked from admin-created records.</li>
-              <li>Counts update as data is added, approved, edited, or deleted.</li>
-            </ul>
-          </article>
+        <section className="grid gap-6 lg:grid-cols-3">
+          <BreakdownCard title="Events by type" items={breakdowns.eventsByType || []} icon={FaCalendarAlt} />
+          <BreakdownCard title="Jobs by status" items={breakdowns.jobsByStatus || []} icon={FaBriefcase} />
+          <BreakdownCard title="Announcements by audience" items={breakdowns.announcementsByAudience || []} icon={FaBullhorn} />
+        </section>
+
+        <section className="grid gap-6 lg:grid-cols-2">
+          <BarChart
+            title="Alumni by passing year"
+            eyebrow="Batch visualization"
+            items={breakdowns.alumniByBatch || []}
+          />
+          <BarChart
+            title="Platform activity chart"
+            eyebrow="Module visualization"
+            items={platformChartData}
+          />
         </section>
       </section>
     </main>
+  );
+}
+
+function BreakdownList({ title, items }) {
+  const max = Math.max(...items.map((item) => Number(item.count) || 0), 1);
+
+  return (
+    <div>
+      {title && <h3 className="mb-3 font-extrabold text-slate-900">{title}</h3>}
+      {items.length ? (
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={item.label}>
+              <div className="mb-1 flex justify-between text-sm font-bold text-slate-600">
+                <span>{item.label}</span>
+                <span>{item.count}</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full rounded-full bg-blue-700"
+                  style={{ width: `${Math.max((Number(item.count) / max) * 100, 8)}%` }}
+                />
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm font-semibold text-slate-500">No data available yet.</p>
+      )}
+    </div>
+  );
+}
+
+function BreakdownCard({ title, items, icon: Icon }) {
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="mb-4 flex items-center gap-3">
+        <div className="grid h-10 w-10 place-items-center rounded-lg bg-blue-50 text-blue-700">
+          <Icon />
+        </div>
+        <h2 className="font-extrabold text-slate-900">{title}</h2>
+      </div>
+      <BreakdownList title="" items={items} />
+    </article>
+  );
+}
+
+function BarChart({ title, eyebrow, items }) {
+  const max = Math.max(...items.map((item) => Number(item.count) || 0), 1);
+
+  return (
+    <article className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+      <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+        {eyebrow}
+      </p>
+      <h2 className="mt-2 text-2xl font-extrabold text-slate-900">{title}</h2>
+      {items.length ? (
+        <div className="mt-6 flex min-h-[260px] items-end gap-3 rounded-lg border border-slate-200 bg-slate-50 p-4">
+          {items.map((item) => (
+            <div key={item.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
+              <span className="text-sm font-extrabold text-slate-900">{item.count}</span>
+              <div className="flex h-44 w-full items-end justify-center">
+                <div
+                  className="w-full max-w-[54px] rounded-t-lg bg-blue-700 transition"
+                  style={{
+                    height: `${Math.max((Number(item.count) / max) * 100, Number(item.count) ? 8 : 0)}%`,
+                  }}
+                />
+              </div>
+              <span className="w-full truncate text-center text-xs font-bold text-slate-500">
+                {item.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <p className="mt-5 text-sm font-semibold text-slate-500">No chart data available yet.</p>
+      )}
+    </article>
   );
 }
 
