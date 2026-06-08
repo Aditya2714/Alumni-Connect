@@ -17,6 +17,20 @@ const mentorshipSchema = new mongoose.Schema(
       trim: true,
       required: true,
     },
+    mentor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+    },
+    mentorName: {
+      type: String,
+      trim: true,
+      default: "Not assigned",
+    },
+    mentorEmail: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     topic: {
       type: String,
       trim: true,

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
-import { FaHandsHelping, FaPaperPlane } from "react-icons/fa";
+import { FaCheckCircle, FaHandsHelping, FaPaperPlane, FaTimesCircle } from "react-icons/fa";
 
 const topics = [
   "Career Guidance",
@@ -16,10 +16,13 @@ function Mentorship() {
   const [request, setRequest] = useState({
     topic: topics[0],
     mode: "Flexible",
+    mentorId: "",
     message: "",
   });
 
-  const [requests, setRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
+  const [receivedRequests, setReceivedRequests] = useState([]);
+  const [mentors, setMentors] = useState([]);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -29,7 +32,8 @@ function Mentorship() {
 
     try {
       const response = await axios.get("/mentorship");
-      setRequests(response.data.data.requests);
+      setSentRequests(response.data.data.sent || response.data.data.requests || []);
+      setReceivedRequests(response.data.data.received || []);
     } catch (error) {
       setMessage(error.response?.data?.message || "Unable to load mentorship requests.");
     } finally {
@@ -39,6 +43,20 @@ function Mentorship() {
 
   useEffect(() => {
     fetchRequests();
+    const fetchMentors = async () => {
+      try {
+        const response = await axios.get("/mentorship/mentors");
+        setMentors(response.data.data.mentors);
+        setRequest((current) => ({
+          ...current,
+          mentorId: current.mentorId || response.data.data.mentors[0]?.id || "",
+        }));
+      } catch (error) {
+        setMessage(error.response?.data?.message || "Unable to load mentor list.");
+      }
+    };
+
+    fetchMentors();
   }, []);
 
   const handleChange = (event) => {
@@ -48,15 +66,36 @@ function Mentorship() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    if (!request.message.trim()) return;
+    if (!request.mentorId || !request.message.trim()) {
+      setMessage("Please select a mentor and enter your request message.");
+      return;
+    }
 
     try {
       const response = await axios.post("/mentorship", request);
-      setRequests((current) => [response.data.data.request, ...current]);
-      setRequest({ topic: topics[0], mode: "Flexible", message: "" });
+      setSentRequests((current) => [response.data.data.request, ...current]);
+      setRequest((current) => ({
+        topic: topics[0],
+        mode: "Flexible",
+        mentorId: current.mentorId,
+        message: "",
+      }));
       setMessage("Mentorship request submitted successfully.");
     } catch (error) {
       setMessage(error.response?.data?.message || "Unable to submit mentorship request.");
+    }
+  };
+
+  const updateRequestStatus = async (requestId, status) => {
+    try {
+      const response = await axios.patch(`/mentorship/${requestId}`, { status });
+      const updated = response.data.data.request;
+      setReceivedRequests((current) =>
+        current.map((item) => (item._id === updated._id ? updated : item))
+      );
+      setMessage(`Mentorship request ${status}.`);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to update mentorship request.");
     }
   };
 
@@ -94,7 +133,7 @@ function Mentorship() {
                   New mentorship request
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
-                  Choose a topic and preferred response mode.
+                  Choose a mentor, topic, and preferred response mode.
                 </p>
               </div>
             </div>
@@ -112,6 +151,24 @@ function Mentorship() {
                 >
                   {topics.map((topic) => (
                     <option key={topic}>{topic}</option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-600">
+                  Select mentor alumni
+                </span>
+                <select
+                  name="mentorId"
+                  value={request.mentorId}
+                  onChange={handleChange}
+                  className={inputClass}
+                >
+                  {mentors.map((mentor) => (
+                    <option key={mentor.id} value={mentor.id}>
+                      {mentor.name} · {mentor.designation} · {mentor.company}
+                    </option>
                   ))}
                 </select>
               </label>
@@ -148,6 +205,7 @@ function Mentorship() {
 
               <button
                 type="submit"
+                disabled={!mentors.length}
                 className="inline-flex min-h-[46px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
               >
                 <FaPaperPlane /> Submit Request
@@ -160,7 +218,7 @@ function Mentorship() {
               Requests
             </p>
             <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
-              Your mentorship requests
+              Sent mentorship requests
             </h2>
 
             {loading && (
@@ -176,44 +234,96 @@ function Mentorship() {
             )}
 
             <div className="mt-5 space-y-4">
-              {requests.map((item) => (
-                <article
-                  key={item._id}
-                  className="rounded-lg border border-slate-200 p-4"
-                >
-                  <div className="flex flex-wrap items-start justify-between gap-3">
-                    <div>
-                      <h3 className="font-extrabold text-slate-900">
-                        {item.topic}
-                      </h3>
-                      <p className="mt-1 text-sm font-semibold text-slate-500">
-                        Preferred mode: {item.mode}
-                      </p>
-                    </div>
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
-                    {item.message}
-                  </p>
-                  {item.adminNote && (
-                    <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-500">
-                      Admin note: {item.adminNote}
-                    </p>
-                  )}
-                </article>
+              {sentRequests.map((item) => (
+                <MentorshipCard key={item._id} item={item} context="sent" />
               ))}
             </div>
-            {!loading && !requests.length && (
+            {!loading && !sentRequests.length && (
               <p className="mt-5 rounded-lg border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">
-                No mentorship requests yet.
+                No sent mentorship requests yet.
               </p>
             )}
           </section>
         </div>
+
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-teal-600">
+            Mentor inbox
+          </p>
+          <h2 className="mt-2 text-2xl font-extrabold text-slate-900">
+            Requests received from alumni
+          </h2>
+
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
+            {receivedRequests.map((item) => (
+              <MentorshipCard key={item._id} item={item} context="received">
+                <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                  <button
+                    type="button"
+                    onClick={() => updateRequestStatus(item._id, "accepted")}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white transition hover:bg-blue-800"
+                  >
+                    <FaCheckCircle /> Accept
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateRequestStatus(item._id, "completed")}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-slate-950 px-4 font-extrabold text-white transition hover:bg-blue-800"
+                  >
+                    <FaCheckCircle /> Complete
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => updateRequestStatus(item._id, "rejected")}
+                    className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 font-extrabold text-red-700 transition hover:bg-red-100"
+                  >
+                    <FaTimesCircle /> Reject
+                  </button>
+                </div>
+              </MentorshipCard>
+            ))}
+          </div>
+
+          {!loading && !receivedRequests.length && (
+            <p className="mt-5 rounded-lg border border-dashed border-slate-300 p-5 text-sm font-semibold text-slate-500">
+              No mentorship requests received yet.
+            </p>
+          )}
+        </section>
       </section>
     </main>
+  );
+}
+
+function MentorshipCard({ item, context, children }) {
+  return (
+    <article className="rounded-lg border border-slate-200 p-4">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h3 className="font-extrabold text-slate-900">{item.topic}</h3>
+          <p className="mt-1 text-sm font-semibold text-slate-500">
+            {context === "received"
+              ? `From: ${item.requesterName}`
+              : `Mentor: ${item.mentorName}`}
+          </p>
+          <p className="mt-1 text-sm font-semibold text-slate-500">
+            Preferred mode: {item.mode}
+          </p>
+        </div>
+        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold capitalize text-blue-700">
+          {item.status}
+        </span>
+      </div>
+      <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
+        {item.message}
+      </p>
+      {item.adminNote && (
+        <p className="mt-3 rounded-lg bg-slate-50 p-3 text-sm font-semibold text-slate-500">
+          Admin note: {item.adminNote}
+        </p>
+      )}
+      {children}
+    </article>
   );
 }
 
