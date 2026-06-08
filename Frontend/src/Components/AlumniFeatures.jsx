@@ -796,11 +796,77 @@ export function ResourceLibrary() {
 }
 
 export function Contributions() {
-  const funds = [
-    { title: "Student Scholarship Fund", amount: "₹4.2L pledged" },
-    { title: "Lab Equipment Support", amount: "₹2.8L pledged" },
-    { title: "Club and Event Support", amount: "₹1.6L pledged" },
-  ];
+  const user = getUserData() || {};
+  const isAdmin = user.role === "admin";
+  const [campaigns, setCampaigns] = useState([]);
+  const [campaignForm, setCampaignForm] = useState({
+    title: "",
+    purpose: "",
+    targetAmount: "",
+  });
+  const [pledges, setPledges] = useState({});
+  const [message, setMessage] = useState("");
+
+  const fetchCampaigns = async () => {
+    try {
+      const response = await axios.get("/contributions");
+      setCampaigns(response.data.data.campaigns);
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to load contribution campaigns.");
+    }
+  };
+
+  useEffect(() => {
+    fetchCampaigns();
+  }, []);
+
+  const handleCampaignChange = (event) => {
+    const { name, value } = event.target;
+    setCampaignForm((current) => ({ ...current, [name]: value }));
+  };
+
+  const createCampaign = async (event) => {
+    event.preventDefault();
+    if (!campaignForm.title.trim() || !campaignForm.purpose.trim()) {
+      setMessage("Please add campaign title and purpose.");
+      return;
+    }
+
+    try {
+      const response = await axios.post("/contributions", campaignForm);
+      setCampaigns((current) => [response.data.data.campaign, ...current]);
+      setCampaignForm({ title: "", purpose: "", targetAmount: "" });
+      setMessage("Contribution campaign created.");
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to create campaign.");
+    }
+  };
+
+  const pledgeContribution = async (campaignId) => {
+    const pledge = pledges[campaignId] || {};
+    if (!pledge.amount) {
+      setMessage("Please enter a pledge amount.");
+      return;
+    }
+
+    try {
+      const response = await axios.post(`/contributions/${campaignId}/pledge`, pledge);
+      const updated = response.data.data.campaign;
+      setCampaigns((current) =>
+        current.map((campaign) => (campaign._id === updated._id ? updated : campaign))
+      );
+      setPledges((current) => ({ ...current, [campaignId]: { amount: "", note: "" } }));
+      setMessage("Contribution pledge recorded.");
+    } catch (error) {
+      setMessage(error.response?.data?.message || "Unable to record pledge.");
+    }
+  };
+
+  const currency = new Intl.NumberFormat("en-IN", {
+    style: "currency",
+    currency: "INR",
+    maximumFractionDigits: 0,
+  });
 
   return (
     <FeatureShell>
@@ -809,18 +875,118 @@ export function Contributions() {
         title="Support scholarships, labs, and student initiatives."
         description="Let alumni contribute to meaningful college initiatives with clear purpose and visibility."
       />
+      {isAdmin && (
+        <form onSubmit={createCampaign} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6">
+          <h2 className="text-2xl font-extrabold text-slate-900">Create contribution campaign</h2>
+          <div className="mt-5 grid gap-4 md:grid-cols-2">
+            <input
+              name="title"
+              value={campaignForm.title}
+              onChange={handleCampaignChange}
+              placeholder="Campaign title"
+              className={inputClass}
+            />
+            <input
+              name="targetAmount"
+              type="number"
+              value={campaignForm.targetAmount}
+              onChange={handleCampaignChange}
+              placeholder="Target amount"
+              className={inputClass}
+            />
+            <textarea
+              name="purpose"
+              value={campaignForm.purpose}
+              onChange={handleCampaignChange}
+              rows="3"
+              placeholder="Purpose of this campaign"
+              className={`${inputClass} md:col-span-2`}
+            />
+          </div>
+          <button type="submit" className="mt-4 inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white">
+            <FaPaperPlane /> Create Campaign
+          </button>
+        </form>
+      )}
+
+      {message && (
+        <section className="rounded-lg bg-blue-50 p-4 text-sm font-bold text-blue-700">
+          {message}
+        </section>
+      )}
+
       <div className="grid gap-4 md:grid-cols-3">
-        {funds.map((fund) => (
-          <article key={fund.title} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
+        {campaigns.map((campaign) => {
+          const target = Number(campaign.targetAmount || 0);
+          const pledged = Number(campaign.pledgedAmount || 0);
+          const percent = target ? Math.min((pledged / target) * 100, 100) : 0;
+
+          return (
+          <article key={campaign._id} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
             <FaDonate className="mb-4 text-2xl text-blue-700" />
-            <h2 className="font-extrabold text-slate-900">{fund.title}</h2>
-            <p className="mt-2 text-sm font-semibold text-slate-500">{fund.amount}</p>
-            <button className="mt-5 inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white">
-              <FaHeart /> Contribute
-            </button>
+            <h2 className="font-extrabold text-slate-900">{campaign.title}</h2>
+            <p className="mt-2 text-sm font-semibold leading-6 text-slate-500">{campaign.purpose}</p>
+            <p className="mt-4 text-sm font-bold text-slate-600">
+              {currency.format(pledged)} pledged
+              {target ? ` of ${currency.format(target)}` : ""}
+            </p>
+            {target > 0 && (
+              <div className="mt-2 h-3 overflow-hidden rounded-full bg-slate-100">
+                <div className="h-full rounded-full bg-blue-700" style={{ width: `${percent}%` }} />
+              </div>
+            )}
+            <p className="mt-2 text-xs font-bold text-slate-500">
+              {campaign.pledgeCount || 0} pledge(s)
+            </p>
+            {!isAdmin && (
+              <div className="mt-5 space-y-3">
+                <input
+                  type="number"
+                  value={pledges[campaign._id]?.amount || ""}
+                  onChange={(event) =>
+                    setPledges((current) => ({
+                      ...current,
+                      [campaign._id]: {
+                        ...(current[campaign._id] || {}),
+                        amount: event.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Amount"
+                  className={inputClass}
+                />
+                <input
+                  value={pledges[campaign._id]?.note || ""}
+                  onChange={(event) =>
+                    setPledges((current) => ({
+                      ...current,
+                      [campaign._id]: {
+                        ...(current[campaign._id] || {}),
+                        note: event.target.value,
+                      },
+                    }))
+                  }
+                  placeholder="Optional note"
+                  className={inputClass}
+                />
+                <button
+                  type="button"
+                  onClick={() => pledgeContribution(campaign._id)}
+                  className="inline-flex min-h-[42px] w-full items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white"
+                >
+                  <FaHeart /> Pledge Contribution
+                </button>
+              </div>
+            )}
           </article>
-        ))}
+          );
+        })}
       </div>
+      {!campaigns.length && (
+        <section className="rounded-lg border border-dashed border-slate-300 bg-white p-8 text-center text-sm font-semibold text-slate-500">
+          No contribution campaigns created yet.
+        </section>
+      )}
     </FeatureShell>
   );
 }
