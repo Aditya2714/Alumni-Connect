@@ -17,6 +17,7 @@ const mentorshipRoutes = require("./mentorshipRoutes");
 const referralRoutes = require("./referralRoutes");
 const communityRoutes = require("./communityRoutes");
 const contributionRoutes = require("./contributionRoutes");
+const publicEventRoutes = require("./publicEventRoutes");
 
 // ✅ root test
 router.get("/", (req, res) => {
@@ -26,6 +27,7 @@ router.get("/", (req, res) => {
 
 // ✅ routes
 router.use("/register", registerRoute);
+router.use("/event", publicEventRoutes);
 router.use("/event", eventRoutes);
 router.use("/auth", loginRoute);   // 👉 IMPORTANT
 router.use("/jobs", jobRoutes);

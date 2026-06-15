@@ -15,6 +15,7 @@ const registerController = async (req, res) => {
       firstName,
       lastName,
       role,
+      linkedinUrl,
     } = req.body;
     console.log("registerController 1");
     // Check if the user already exists
@@ -46,6 +47,9 @@ const registerController = async (req, res) => {
       rollNumber,
       firstName,
       lastName,
+      socialProfiles: {
+        linkedin: linkedinUrl || "https://www.linkedin.com/",
+      },
     });
 
     res.status(201).json({

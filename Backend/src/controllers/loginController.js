@@ -54,7 +54,7 @@ const loginController = async (req, res) => {
           message:
             user.approvalStatus === "rejected"
               ? "Alumni registration was rejected by admin"
-              : "Alumni not approved",
+              : "Admin not approved",
         });
       }
 

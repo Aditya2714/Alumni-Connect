@@ -77,7 +77,7 @@ const AlumniSchema = new mongoose.Schema(
       },
       linkedin: {
         type: String,
-        default: "https://www.linkedin.com/",
+        required: [true, "LinkedIn profile URL is required"],
       },
     },
     imageUrl: String,

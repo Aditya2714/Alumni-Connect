@@ -2,6 +2,10 @@ const Announcement = require("../models/announcementModel");
 
 const createAnnouncement = async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ status: "fail", message: "Admin access required" });
+    }
+
     const { title, audience, message } = req.body;
 
     if (!title || !message) {

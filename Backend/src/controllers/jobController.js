@@ -4,6 +4,10 @@ const { Job } = require("../models/job");
 // Controller to create a job
 const createJobController = async (req, res) => {
   try {
+    if (req.user.role !== "admin") {
+      return res.status(403).json({ status: "fail", message: "Admin access required" });
+    }
+
     const { title, description, company, location, type, status, vacancy } = req.body;
 
     if (!title || !description) {

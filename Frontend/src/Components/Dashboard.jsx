@@ -19,6 +19,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Link, NavLink } from "react-router-dom";
 import { getUserData } from "../services/authService";
+import logo from "../assets/img/logo.png";
 
 const roleCopy = {
   alumni: {
@@ -290,10 +291,12 @@ function Dashboard() {
     <main className="bg-slate-50 px-4 py-6">
       <section className="mx-auto grid max-w-7xl gap-6 lg:grid-cols-[260px_1fr]">
         <aside className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <div className="mb-5 flex items-center gap-3 border-b border-slate-200 pb-4">
-            <div className="grid h-11 w-11 place-items-center rounded-lg bg-blue-700 text-sm font-extrabold text-white">
-              AC
-            </div>
+            <div className="mb-5 flex items-center gap-3 border-b border-slate-200 pb-4">
+              <img
+                src={logo}
+                alt="CMReunite Logo"
+                className="h-11 w-11 rounded object-cover"
+              />
             <div>
               <p className="font-extrabold text-slate-900">Workspace</p>
               <p className="text-xs font-bold capitalize text-slate-500">{activeRole}</p>

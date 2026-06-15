@@ -120,11 +120,11 @@ function Jobs() {
             Jobs
           </p>
           <h1 className="text-3xl font-extrabold tracking-normal md:text-4xl">
-            Explore opportunities shared by alumni.
+            Explore opportunities posted by admin.
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base">
             Browse openings, referral-friendly roles, internships, and career
-            leads from the CMRIT network.
+            leads shared by the CMRIT administration.
           </p>
           {loading && (
             <p className="mt-3 text-sm font-semibold text-teal-100">
@@ -287,7 +287,7 @@ function Jobs() {
               No jobs posted yet
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              Job opportunities will appear here after an admin posts them.
+              Job opportunities will appear here once the admin posts them.
             </p>
           </section>
         )}

@@ -174,10 +174,28 @@ const deleteEventController = async (req, res) => {
   }
 };
 
+const getUpcomingEventsController = async (req, res) => {
+  try {
+    const events = await Event.find({ date: { $gte: new Date() } })
+      .select("title date location time type")
+      .sort({ date: 1 })
+      .limit(10);
+
+    res.status(200).json({
+      status: "success",
+      data: { events },
+    });
+  } catch (error) {
+    console.error("Error fetching upcoming events:", error);
+    res.status(500).json({ status: "fail", message: "Internal Server Error" });
+  }
+};
+
 module.exports = {
   createEventController,
   deleteEventController,
   getAllEventsController,
   toggleEventRegistrationController,
   updateEventController,
+  getUpcomingEventsController,
 };

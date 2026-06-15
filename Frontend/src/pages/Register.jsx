@@ -22,6 +22,7 @@ function Register() {
     firstName: "",
     lastName: "",
     role: "",
+    linkedinUrl: "",
   });
 
   const navigate = useNavigate();
@@ -57,6 +58,18 @@ function Register() {
     e.preventDefault();
     setLoading(true);
 
+    if (!formData.role) {
+      toast.error("Please select a role.");
+      setLoading(false);
+      return;
+    }
+
+    if (isAlumniRole && !formData.degree) {
+      toast.error("Please select a degree.");
+      setLoading(false);
+      return;
+    }
+
     try {
       // ✅ Send only required fields to backend
       const payload = {
@@ -71,6 +84,7 @@ function Register() {
         degree: formData.degree,
         branch: formData.branch,
         rollNumber: formData.rollNumber,
+        linkedinUrl: formData.linkedinUrl,
       };
 
       const response = await axios.post(
@@ -137,7 +151,7 @@ function Register() {
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
-                    First name
+                    First name *
                   </span>
                   <input
                     name="firstName"
@@ -151,7 +165,7 @@ function Register() {
 
                 <label className="block">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Last name
+                    Last name *
                   </span>
                   <input
                     name="lastName"
@@ -172,7 +186,7 @@ function Register() {
               <div className="grid gap-4 md:grid-cols-2">
                 <label className="block">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Email
+                    Email *
                   </span>
                   <input
                     name="email"
@@ -186,7 +200,7 @@ function Register() {
 
                 <label className="block">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Password
+                    Password *
                   </span>
                   <input
                     name="password"
@@ -200,7 +214,7 @@ function Register() {
 
                 <label className="block md:col-span-2">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Role
+                    Role *
                   </span>
                   <Select
                     options={roleOptions}
@@ -221,7 +235,7 @@ function Register() {
                 <div className="grid gap-4 md:grid-cols-2">
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Start year
+                      Start year *
                     </span>
                     <input
                       name="startYear"
@@ -235,7 +249,7 @@ function Register() {
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-600">
-                      End year
+                      End year *
                     </span>
                     <input
                       name="endYear"
@@ -249,7 +263,7 @@ function Register() {
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Degree
+                      Degree *
                     </span>
                     <Select
                       options={degreeOptions}
@@ -262,7 +276,7 @@ function Register() {
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Branch
+                      Branch *
                     </span>
                     <input
                       name="branch"
@@ -276,7 +290,7 @@ function Register() {
 
                   <label className="block">
                     <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Roll number
+                      Roll number *
                     </span>
                     <input
                       name="rollNumber"
@@ -284,6 +298,20 @@ function Register() {
                       required={isAlumniRole}
                       onChange={handleChange}
                       placeholder="USN / Roll Number"
+                      className={inputClass}
+                    />
+                  </label>
+
+                  <label className="block md:col-span-2">
+                    <span className="mb-2 block text-sm font-bold text-slate-600">
+                      LinkedIn profile URL *
+                    </span>
+                    <input
+                      name="linkedinUrl"
+                      type="url"
+                      required={isAlumniRole}
+                      onChange={handleChange}
+                      placeholder="https://linkedin.com/in/yourprofile"
                       className={inputClass}
                     />
                   </label>

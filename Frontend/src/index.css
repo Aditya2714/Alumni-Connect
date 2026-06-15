@@ -1,3 +1,72 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ---------- Marquee ---------- */
+.marquee-wrapper {
+  display: flex;
+  align-items: stretch;
+  background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  white-space: nowrap;
+  height: 42px;
+}
+
+.marquee-label {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  background: #dc2626;
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  z-index: 2;
+}
+
+.marquee-track {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+}
+
+.marquee-content {
+  display: inline-flex;
+  gap: 0;
+  animation: marquee-scroll 35s linear infinite;
+}
+
+.marquee-item {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 24px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.marquee-dot {
+  margin-left: 24px;
+  font-size: 0.4rem;
+  color: #64748b;
+}
+
+.marquee-wrapper:hover .marquee-content {
+  animation-play-state: paused;
+}
+
+@keyframes marquee-scroll {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}

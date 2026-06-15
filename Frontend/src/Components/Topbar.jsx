@@ -4,12 +4,12 @@ import {
   FaHome,
   FaTimes,
   FaUserCircle,
-  FaUserTie,
 } from "react-icons/fa";
 import { Link, NavLink } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { getLoggedIn, getUserData } from "../services/authService";
 import { logout } from "../features/authSlice";
+import logo from "../assets/img/logo.png";
 
 function Topbar() {
   const [isMobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -53,12 +53,13 @@ function Topbar() {
           className="flex items-center gap-3"
           onClick={closeMobileMenu}
         >
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-blue-700 text-sm font-extrabold text-white">
-            AC
-          </span>
+          <img
+            src={logo}
+            alt="CMReunite Logo"
+            className="h-10 w-10 rounded object-cover"
+          />
           <span className="flex items-center gap-2 text-xl font-extrabold">
-            <FaUserTie className="hidden text-blue-700 sm:block" />
-            Alumni Connect
+            CMReunite
           </span>
         </Link>
 
@@ -141,7 +142,7 @@ function Topbar() {
               Logout?
             </h2>
             <p className="mt-2 text-center text-sm font-semibold leading-6 text-slate-500">
-              Do you really want to logout from Alumni Connect?
+              Do you really want to logout from CMReunite?
             </p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <button

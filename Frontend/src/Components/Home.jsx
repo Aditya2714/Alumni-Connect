@@ -1,9 +1,22 @@
-import React from "react";
+import React, { useState } from "react";
 import { Link } from "react-router-dom";
+import { FaEnvelope } from "react-icons/fa";
+import Marquee from "./Marquee";
 
 function Home() {
+  const [subEmail, setSubEmail] = useState("");
+
+  const handleSubscribe = (e) => {
+    e.preventDefault();
+    if (subEmail) {
+      alert(`Subscribed with: ${subEmail}`);
+      setSubEmail("");
+    }
+  };
+
   return (
     <main className="bg-slate-950">
+      <Marquee />
       <section
         className="relative min-h-[calc(100vh-72px)] overflow-hidden bg-cover bg-[center_top]"
         style={{
@@ -65,6 +78,32 @@ function Home() {
           </div>
         </div>
       </section>
+
+      {/* Subscribe Section — Bottom */}
+      <div className="border-t border-white/10 bg-slate-900/80">
+        <div className="mx-auto flex max-w-7xl flex-col items-center gap-4 px-6 py-10 sm:flex-row sm:justify-between">
+          <div>
+            <h4 className="text-base font-extrabold text-white">Stay Updated</h4>
+            <p className="text-sm text-slate-400">Subscribe to get the latest event and alumni news.</p>
+          </div>
+          <form onSubmit={handleSubscribe} className="flex w-full max-w-md">
+            <input
+              type="email"
+              required
+              placeholder="Enter your email"
+              value={subEmail}
+              onChange={(e) => setSubEmail(e.target.value)}
+              className="flex-1 rounded-l-lg border border-white/10 bg-white/5 px-4 py-3 text-sm font-semibold text-white placeholder-slate-500 outline-none focus:border-teal-500"
+            />
+            <button
+              type="submit"
+              className="rounded-r-lg bg-teal-600 px-6 py-3 text-sm font-extrabold text-white transition hover:bg-teal-500"
+            >
+              Subscribe
+            </button>
+          </form>
+        </div>
+      </div>
     </main>
   );
 }

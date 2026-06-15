@@ -27,7 +27,7 @@ const Feedback = () => {
 
       {/* Experience Rating */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-600">How would you rate your overall experience with Alumni Connect?</label>
+        <label className="block text-sm font-medium text-gray-600">How would you rate your overall experience with CMReunite?</label>
         <input
           type="range"
           min="1"
@@ -92,7 +92,7 @@ const Feedback = () => {
 
       {/* Meaningful Dropdown */}
       <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-600">Please select the option that best describes your primary reason for using Alumni Connect:</label>
+        <label className="block text-sm font-medium text-gray-600">Please select the option that best describes your primary reason for using CMReunite:</label>
         <select
           value={selectedOption}
           onChange={(e) => setSelectedOption(e.target.value)}
