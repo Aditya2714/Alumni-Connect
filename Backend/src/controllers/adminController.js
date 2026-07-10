@@ -5,6 +5,7 @@ const Event = require("../models/eventModel");
 const { Job } = require("../models/job");
 const Announcement = require("../models/announcementModel");
 const Recognition = require("../models/recognitionModel");
+const { sendApprovalEmail, sendRejectionEmail } = require("../utils/emailHelper");
 
 const requireAdmin = (req, res) => {
   if (req.user.role !== "admin") {
@@ -216,6 +217,16 @@ const updateUserApproval = async (req, res) => {
 
     if (!user) {
       return res.status(404).json({ status: "fail", message: "User not found" });
+    }
+
+    try {
+      if (nextStatus === "approved") {
+        await sendApprovalEmail(user.email, user.name);
+      } else if (nextStatus === "rejected") {
+        await sendRejectionEmail(user.email, user.name);
+      }
+    } catch (emailError) {
+      console.error("Failed to send notification email:", emailError);
     }
 
     return res.status(200).json({

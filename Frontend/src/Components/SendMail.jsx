@@ -4,34 +4,42 @@ import {
   FaBullhorn,
   FaEdit,
   FaPaperPlane,
+  FaPaperclip,
   FaTimes,
   FaTrash,
+  FaImage,
+  FaFilePdf,
 } from "react-icons/fa";
 import { getUserData } from "../services/authService";
+import Loader from "./Loader";
 
-const audiences = ["All Alumni", "Specific Batch", "Specific Branch", "Faculty", "College"];
-
-const emptyAnnouncement = {
-  title: "",
-  audience: audiences[0],
-  message: "",
-};
+const branchOptions = ["All branches", "CSE", "ISE", "ECE", "EEE", "ME", "CV"];
+const batchOptions = ["All batches", "2024", "2023", "2022", "2021", "2020"];
 
 const formatAnnouncementForUi = (item) => ({
   id: item._id,
   title: item.title,
-  audience: item.audience,
+  branch: item.branch || "All branches",
+  batch: item.batch || "All batches",
   message: item.message,
+  attachmentUrl: item.attachmentUrl || null,
+  attachmentType: item.attachmentType || null,
   status: "Published",
 });
 
 function Announcements() {
   const user = getUserData() || {};
   const isAdmin = user.role === "admin";
-  const [announcement, setAnnouncement] = useState(emptyAnnouncement);
+  const [title, setTitle] = useState("");
+  const [branch, setBranch] = useState("All branches");
+  const [batch, setBatch] = useState("All batches");
+  const [message, setMessage] = useState("");
+  const [attachment, setAttachment] = useState(null);
   const [items, setItems] = useState([]);
-  const [editingAnnouncementId, setEditingAnnouncementId] = useState(null);
+  const [editingId, setEditingId] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [statusMsg, setStatusMsg] = useState("");
 
   useEffect(() => {
     const fetchAnnouncements = async () => {
@@ -45,67 +53,71 @@ function Announcements() {
         setLoading(false);
       }
     };
-
     fetchAnnouncements();
   }, []);
 
-  const handleChange = (event) => {
-    const { name, value } = event.target;
-    setAnnouncement((current) => ({ ...current, [name]: value }));
+  const resetForm = () => {
+    setTitle("");
+    setBranch("All branches");
+    setBatch("All batches");
+    setMessage("");
+    setAttachment(null);
+    setEditingId(null);
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
-    if (!announcement.title.trim() || !announcement.message.trim()) return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!title.trim() || !message.trim()) return;
+
+    setSubmitting(true);
+    setStatusMsg("");
 
     try {
-      if (editingAnnouncementId) {
-        const response = await axios.patch(
-          `/announcements/${editingAnnouncementId}`,
-          announcement
-        );
-        const updated = formatAnnouncementForUi(response.data.data.announcement);
-        setItems((current) =>
-          current.map((item) =>
-            item.id === editingAnnouncementId ? updated : item
-          )
-        );
-      } else {
-        const response = await axios.post("/announcements", announcement);
-        const created = formatAnnouncementForUi(response.data.data.announcement);
-        setItems((current) => [created, ...current]);
+      const formData = new FormData();
+      formData.append("title", title);
+      formData.append("branch", branch);
+      formData.append("batch", batch);
+      formData.append("message", message);
+      if (attachment) {
+        formData.append("attachment", attachment);
       }
 
-      setAnnouncement(emptyAnnouncement);
-      setEditingAnnouncementId(null);
-    } catch (error) {
-      console.error("Announcement save failed:", error);
+      if (editingId) {
+        await axios.patch(`/announcements/${editingId}`, {
+          title, branch, batch, message,
+        });
+        setStatusMsg("Announcement updated.");
+      } else {
+        await axios.post("/announcements", formData);
+        setStatusMsg("Announcement published. Emails triggered to matching alumni.");
+      }
+
+      const response = await axios.get("/announcements");
+      setItems(response.data.data.announcements.map(formatAnnouncementForUi));
+      resetForm();
+    } catch (err) {
+      setStatusMsg(err.response?.data?.message || "Failed to save announcement.");
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const handleEditAnnouncement = (item) => {
-    setEditingAnnouncementId(item.id);
-    setAnnouncement({
-      title: item.title,
-      audience: item.audience,
-      message: item.message,
-    });
+  const handleEdit = (item) => {
+    setEditingId(item.id);
+    setTitle(item.title);
+    setBranch(item.branch);
+    setBatch(item.batch);
+    setMessage(item.message);
+    setAttachment(null);
   };
 
-  const handleCancelEdit = () => {
-    setEditingAnnouncementId(null);
-    setAnnouncement(emptyAnnouncement);
-  };
-
-  const handleDeleteAnnouncement = async (announcementId) => {
+  const handleDelete = async (id) => {
     try {
-      await axios.delete(`/announcements/${announcementId}`);
-      setItems((current) =>
-        current.filter((item) => item.id !== announcementId)
-      );
-      if (editingAnnouncementId === announcementId) handleCancelEdit();
-    } catch (error) {
-      console.error("Announcement delete failed:", error);
+      await axios.delete(`/announcements/${id}`);
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      if (editingId === id) resetForm();
+    } catch (err) {
+      console.error(err);
     }
   };
 
@@ -123,8 +135,7 @@ function Announcements() {
             Share updates with the alumni community.
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base">
-            Create targeted announcements for alumni, faculty, branches, and
-            batches without making the feature feel like a raw email tool.
+            Create targeted announcements for alumni by branch and batch.
           </p>
           {loading && (
             <p className="mt-3 text-sm font-semibold text-teal-100">
@@ -136,6 +147,7 @@ function Announcements() {
         {isAdmin && (
           <form
             onSubmit={handleSubmit}
+            encType="multipart/form-data"
             className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
           >
             <div className="mb-5 flex items-center gap-3">
@@ -144,15 +156,21 @@ function Announcements() {
               </div>
               <div>
                 <h2 className="text-2xl font-extrabold text-slate-900">
-                  {editingAnnouncementId ? "Edit announcement" : "New announcement"}
+                  {editingId ? "Edit announcement" : "New announcement"}
                 </h2>
                 <p className="text-sm font-semibold text-slate-500">
-                  {editingAnnouncementId
+                  {editingId
                     ? "Update the selected announcement."
                     : "Choose an audience and prepare the update."}
                 </p>
               </div>
             </div>
+
+            {statusMsg && (
+              <div className="mb-4 rounded-lg bg-blue-50 p-4 text-sm font-bold text-blue-700">
+                {statusMsg}
+              </div>
+            )}
 
             <div className="grid gap-4 md:grid-cols-2">
               <label className="block">
@@ -161,27 +179,63 @@ function Announcements() {
                 </span>
                 <input
                   name="title"
-                  value={announcement.title}
-                  onChange={handleChange}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
                   placeholder="Announcement title"
+                  required
                   className={inputClass}
                 />
               </label>
 
               <label className="block">
                 <span className="mb-2 block text-sm font-bold text-slate-600">
-                  Audience
+                  Branch
                 </span>
                 <select
-                  name="audience"
-                  value={announcement.audience}
-                  onChange={handleChange}
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
                   className={inputClass}
                 >
-                  {audiences.map((audience) => (
-                    <option key={audience}>{audience}</option>
+                  {branchOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
                   ))}
                 </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-600">
+                  Batch
+                </span>
+                <select
+                  value={batch}
+                  onChange={(e) => setBatch(e.target.value)}
+                  className={inputClass}
+                >
+                  {batchOptions.map((opt) => (
+                    <option key={opt} value={opt}>
+                      {opt}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label className="block">
+                <span className="mb-2 block text-sm font-bold text-slate-600">
+                  <FaPaperclip className="mr-1 inline" /> Attachment (optional)
+                </span>
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => setAttachment(e.target.files[0])}
+                  className="w-full rounded-lg border border-slate-300 px-4 py-3 text-sm text-slate-900 file:mr-4 file:rounded-lg file:border-0 file:bg-blue-50 file:px-4 file:py-2 file:text-sm file:font-bold file:text-blue-700 hover:file:bg-blue-100"
+                />
+                {attachment && (
+                  <p className="mt-2 text-sm font-semibold text-slate-500">
+                    Selected: {attachment.name}
+                  </p>
+                )}
               </label>
 
               <label className="block md:col-span-2">
@@ -190,10 +244,11 @@ function Announcements() {
                 </span>
                 <textarea
                   name="message"
-                  value={announcement.message}
-                  onChange={handleChange}
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
                   rows="4"
                   placeholder="Write the update for the selected audience."
+                  required
                   className={inputClass}
                 />
               </label>
@@ -202,15 +257,22 @@ function Announcements() {
             <div className="mt-4 flex flex-wrap gap-3">
               <button
                 type="submit"
-                className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800"
+                disabled={submitting}
+                className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-5 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
               >
-                <FaPaperPlane />{" "}
-                {editingAnnouncementId ? "Update Announcement" : "Save Announcement"}
+                {submitting ? (
+                  <Loader text={editingId ? "Updating" : "Publishing"} />
+                ) : (
+                  <>
+                    <FaPaperPlane />{" "}
+                    {editingId ? "Update Announcement" : "Publish & Notify"}
+                  </>
+                )}
               </button>
-              {editingAnnouncementId && (
+              {editingId && (
                 <button
                   type="button"
-                  onClick={handleCancelEdit}
+                  onClick={resetForm}
                   className="inline-flex min-h-[46px] items-center justify-center gap-2 rounded-lg border border-slate-300 px-5 font-extrabold text-slate-900 transition hover:border-slate-900"
                 >
                   <FaTimes /> Cancel
@@ -239,9 +301,20 @@ function Announcements() {
                     <h3 className="font-extrabold text-slate-900">
                       {item.title}
                     </h3>
-                    <p className="mt-1 text-sm font-semibold text-slate-500">
-                      Audience: {item.audience}
-                    </p>
+                    <div className="mt-1 flex flex-wrap gap-2">
+                      <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
+                        {item.branch}
+                      </span>
+                      <span className="rounded-full bg-purple-50 px-3 py-1 text-xs font-extrabold text-purple-700">
+                        Batch: {item.batch}
+                      </span>
+                      {item.attachmentUrl && (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-3 py-1 text-xs font-extrabold text-amber-700">
+                          {item.attachmentType === "image" ? <FaImage /> : <FaFilePdf />}
+                          Attachment
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-extrabold text-blue-700">
                     {item.status}
@@ -250,19 +323,46 @@ function Announcements() {
                 <p className="mt-3 text-sm font-semibold leading-6 text-slate-500">
                   {item.message}
                 </p>
+                {item.attachmentUrl && item.attachmentType === "image" && (
+                  <img
+                    src={item.attachmentUrl}
+                    alt="Attachment"
+                    className="mt-3 max-h-48 rounded-lg border border-slate-200 object-cover"
+                  />
+                )}
+                {item.attachmentUrl && item.attachmentType === "pdf" && (
+                  <a
+                    href={item.attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm font-extrabold text-red-700 transition hover:bg-red-100"
+                  >
+                    <FaFilePdf /> View / Download PDF
+                  </a>
+                )}
+                {item.attachmentUrl && !item.attachmentType && (
+                  <a
+                    href={item.attachmentUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-extrabold text-slate-700 transition hover:bg-slate-100"
+                  >
+                    <FaPaperclip /> View Attachment
+                  </a>
+                )}
 
                 {isAdmin && (
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <button
                       type="button"
-                      onClick={() => handleEditAnnouncement(item)}
+                      onClick={() => handleEdit(item)}
                       className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg bg-blue-700 px-4 font-extrabold text-white transition hover:bg-blue-800"
                     >
                       <FaEdit /> Edit
                     </button>
                     <button
                       type="button"
-                      onClick={() => handleDeleteAnnouncement(item.id)}
+                      onClick={() => handleDelete(item.id)}
                       className="inline-flex min-h-[42px] items-center justify-center gap-2 rounded-lg border border-red-200 bg-red-50 px-4 font-extrabold text-red-700 transition hover:bg-red-100"
                     >
                       <FaTrash /> Delete

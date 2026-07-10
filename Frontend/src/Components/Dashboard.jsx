@@ -8,6 +8,7 @@ import {
   FaDonate,
   FaHandsHelping,
   FaIdBadge,
+  FaBrain,
   FaSearch,
   FaUpload,
   FaUserCheck,
@@ -61,6 +62,7 @@ const navByRole = {
     ["Resources", "/resources", FaBookOpen],
     ["Stories", "/alumni-stories", FaUsers],
     ["Recognition", "/recognition", FaAward],
+    ["Recommended", "/recommendations", FaBrain],
   ],
   admin: [
     ["Dashboard", "/dashboard", FaIdBadge],
@@ -95,7 +97,7 @@ const navByRole = {
     ["Alumni Directory", "/alumni-directory", FaSearch],
     ["Contributions", "/contributions", FaDonate],
     ["Recognition", "/recognition", FaAward],
-    ["Reports", "/forum", FaComments],
+    ["Reports", "/reports", FaComments],
   ],
 };
 

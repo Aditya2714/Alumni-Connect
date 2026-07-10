@@ -18,6 +18,7 @@ const referralRoutes = require("./referralRoutes");
 const communityRoutes = require("./communityRoutes");
 const contributionRoutes = require("./contributionRoutes");
 const publicEventRoutes = require("./publicEventRoutes");
+const recommendationRoutes = require("./recommendationRoutes");
 
 // ✅ root test
 router.get("/", (req, res) => {
@@ -42,6 +43,7 @@ router.use("/mentorship", mentorshipRoutes);
 router.use("/referrals", referralRoutes);
 router.use("/community", communityRoutes);
 router.use("/contributions", contributionRoutes);
+router.use("/ml", recommendationRoutes);
 router.use("/", alumniListRoute);
 
 module.exports = router;

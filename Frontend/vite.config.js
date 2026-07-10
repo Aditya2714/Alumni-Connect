@@ -40,6 +40,10 @@ export default defineConfig({
         target: "http://localhost:4000",
         changeOrigin: true,
       },
+      "/uploads": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
       "/recognition": {
         target: "http://localhost:4000",
         changeOrigin: true,
@@ -61,6 +65,18 @@ export default defineConfig({
         changeOrigin: true,
       },
       "/contributions": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/ml": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/otp": {
+        target: "http://localhost:4000",
+        changeOrigin: true,
+      },
+      "/register": {
         target: "http://localhost:4000",
         changeOrigin: true,
       },

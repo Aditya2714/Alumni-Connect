@@ -1,5 +1,4 @@
 import React from 'react';
-import Spinner from '../assets/img/Spinner.svg'
 const Loader = ({ text }) => {
   return (
     <div className="flex flex-row">

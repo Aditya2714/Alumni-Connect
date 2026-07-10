@@ -18,6 +18,7 @@ const registerController = async (req, res) => {
       linkedinUrl,
     } = req.body;
     console.log("registerController 1");
+    console.log("linkedinUrl received:", linkedinUrl);
     // Check if the user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {

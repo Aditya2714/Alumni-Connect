@@ -19,6 +19,9 @@ router.post("/", async (req, res) => {
       rollNumber,
       firstName,
       lastName,
+      linkedinUrl,
+      designation,
+      domain,
     } = req.body;
 
     if (!email || !password || !role) {
@@ -31,9 +34,9 @@ router.post("/", async (req, res) => {
 
     if (
       role === "alumni" &&
-      (!firstName || !startYear || !endYear || !degree || !branch || !rollNumber)
+      (!firstName || !startYear || !endYear || !degree || !branch || !rollNumber || !designation || !domain)
     ) {
-      return res.status(400).json({ message: "Alumni academic details are required" });
+      return res.status(400).json({ message: "All alumni details are required (including designation and domain)" });
     }
 
     const existingUser = await User.findOne({ email });
@@ -74,6 +77,11 @@ router.post("/", async (req, res) => {
         rollNumber,
         firstName,
         lastName,
+        designation,
+        domain,
+        socialProfiles: {
+          linkedin: linkedinUrl || "https://www.linkedin.com/",
+        },
       });
     }
 

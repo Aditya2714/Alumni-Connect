@@ -1,6 +1,5 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { FaEnvelope } from "react-icons/fa";
 import Marquee from "./Marquee";
 
 function Home() {

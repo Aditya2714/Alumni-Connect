@@ -6,13 +6,26 @@ const announcementSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
-    audience: {
+    branch: {
       type: String,
-      default: "All alumni",
+      default: "All branches",
+    },
+    batch: {
+      type: String,
+      default: "All batches",
     },
     message: {
       type: String,
       required: true,
+    },
+    attachmentUrl: {
+      type: String,
+      default: null,
+    },
+    attachmentType: {
+      type: String,
+      enum: ["image", "pdf", null],
+      default: null,
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,

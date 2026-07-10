@@ -1,6 +1,5 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./App.jsx";
 import "./index.css";
 import {
   createBrowserRouter,
@@ -30,6 +29,7 @@ import SearchPeople from "./Components/SearchPeople.jsx";
 import Mentorship from "./Components/Meeting.jsx";
 import Feedback from "./Components/Feedback.jsx";
 import Profile from "./Components/Profile.jsx";
+import Recommendations from "./Components/Recommendations.jsx";
 import {
   AlumniStories,
   CareerReferrals,
@@ -261,6 +261,14 @@ const router = createBrowserRouter([
         element: (
           <RequireAuth>
             <Feedback />
+          </RequireAuth>
+        ),
+      },
+      {
+        path: "/recommendations",
+        element: (
+          <RequireAuth>
+            <Recommendations />
           </RequireAuth>
         ),
       },

@@ -4,8 +4,8 @@ const { Job } = require("../models/job");
 // Controller to create a job
 const createJobController = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ status: "fail", message: "Admin access required" });
+    if (req.user.role !== "alumni") {
+      return res.status(403).json({ status: "fail", message: "Only alumni can post jobs" });
     }
 
     const { title, description, company, location, type, status, vacancy } = req.body;
@@ -66,8 +66,8 @@ const getAllJobsController = async (req, res) => {
 
 const updateJobController = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ status: "fail", message: "Admin access required" });
+    if (req.user.role !== "alumni") {
+      return res.status(403).json({ status: "fail", message: "Only alumni can update jobs" });
     }
 
     const allowedFields = [
@@ -105,8 +105,8 @@ const updateJobController = async (req, res) => {
 
 const deleteJobController = async (req, res) => {
   try {
-    if (req.user.role !== "admin") {
-      return res.status(403).json({ status: "fail", message: "Admin access required" });
+    if (req.user.role !== "alumni") {
+      return res.status(403).json({ status: "fail", message: "Only alumni can delete jobs" });
     }
 
     const job = await Job.findByIdAndDelete(req.params.id);

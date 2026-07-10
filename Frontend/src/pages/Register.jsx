@@ -1,15 +1,21 @@
 import "react-toastify/dist/ReactToastify.css";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
 import Select from "react-select";
 import { ToastContainer, toast } from "react-toastify";
 import { Link, useNavigate } from "react-router-dom";
 import Loader from "../Components/Loader";
+import OtpInput from "../Components/OtpInput";
 
 function Register() {
   const [selectedDegree, setSelectedDegree] = useState(null);
   const [selectedRole, setSelectedRole] = useState(null);
+  const [selectedDomain, setSelectedDomain] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  const [step, setStep] = useState(1);
+  const [otpValue, setOtpValue] = useState("");
+  const [otpTimer, setOtpTimer] = useState(0);
 
   const [formData, setFormData] = useState({
     email: "",
@@ -23,9 +29,18 @@ function Register() {
     lastName: "",
     role: "",
     linkedinUrl: "",
+    designation: "",
+    domain: "",
   });
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (otpTimer > 0) {
+      const interval = setInterval(() => setOtpTimer((t) => t - 1), 1000);
+      return () => clearInterval(interval);
+    }
+  }, [otpTimer]);
 
   const roleOptions = [
     { value: "alumni", label: "Alumni" },
@@ -40,6 +55,23 @@ function Register() {
     { value: "phd", label: "PhD" },
   ];
 
+  const domainOptions = [
+    { value: "Information Technology", label: "Information Technology" },
+    { value: "Computer Science / Software", label: "Computer Science / Software" },
+    { value: "Data Science / AI / ML", label: "Data Science / AI / ML" },
+    { value: "Electronics / Embedded Systems", label: "Electronics / Embedded Systems" },
+    { value: "Mechanical / Manufacturing", label: "Mechanical / Manufacturing" },
+    { value: "Civil / Construction", label: "Civil / Construction" },
+    { value: "Finance / Banking", label: "Finance / Banking" },
+    { value: "Marketing / Sales", label: "Marketing / Sales" },
+    { value: "Healthcare / Biotech", label: "Healthcare / Biotech" },
+    { value: "Education / Research", label: "Education / Research" },
+    { value: "Consulting", label: "Consulting" },
+    { value: "Government / Public Sector", label: "Government / Public Sector" },
+    { value: "Entrepreneurship", label: "Entrepreneurship" },
+    { value: "Others", label: "Others" },
+  ];
+
   const handleDegreeChange = (selectedOption) => {
     setSelectedDegree(selectedOption);
     setFormData({ ...formData, degree: selectedOption.value });
@@ -50,8 +82,46 @@ function Register() {
     setFormData({ ...formData, role: selectedOption.value });
   };
 
+  const handleDomainChange = (selectedOption) => {
+    setSelectedDomain(selectedOption);
+    setFormData({ ...formData, domain: selectedOption.value });
+  };
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleSendOtp = async () => {
+    if (!formData.email) {
+      toast.error("Please enter your email first");
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post("/otp/send", { email: formData.email });
+      toast.success("OTP sent to your email");
+      setStep(2);
+      setOtpTimer(60);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to send OTP");
+    }
+    setLoading(false);
+  };
+
+  const handleVerifyOtp = async () => {
+    if (otpValue.length !== 6) {
+      toast.error("Please enter the complete 6-digit OTP");
+      return;
+    }
+    setLoading(true);
+    try {
+      await axios.post("/otp/verify", { email: formData.email, otp: otpValue });
+      toast.success("Email verified successfully");
+      setStep(3);
+    } catch (error) {
+      toast.error(error.response?.data?.message || "OTP verification failed");
+    }
+    setLoading(false);
   };
 
   const handleSubmit = async (e) => {
@@ -71,7 +141,6 @@ function Register() {
     }
 
     try {
-      // ✅ Send only required fields to backend
       const payload = {
         name: formData.firstName + " " + formData.lastName,
         email: formData.email,
@@ -85,12 +154,11 @@ function Register() {
         branch: formData.branch,
         rollNumber: formData.rollNumber,
         linkedinUrl: formData.linkedinUrl,
+        designation: formData.designation,
+        domain: formData.domain,
       };
 
-      const response = await axios.post(
-        "http://localhost:4000/register",
-        payload
-      );
+      const response = await axios.post("/register", payload);
 
       if (response.data.message === "User registered successfully") {
         toast.success("Registration successful!");
@@ -100,7 +168,7 @@ function Register() {
       }
     } catch (error) {
       console.error("Error during registration:", error);
-      toast.error("Registration failed. Please try again.");
+      toast.error(error.response?.data?.message || "Registration failed. Please try again.");
     }
 
     setLoading(false);
@@ -140,50 +208,41 @@ function Register() {
                 Join the CMRIT alumni portal and unlock access to alumni search,
                 events, job opportunities, and college updates.
               </p>
+              <div className="mt-4 flex items-center gap-3">
+                {[1, 2, 3].map((s) => (
+                  <div key={s} className="flex items-center gap-2">
+                    <div
+                      className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-extrabold ${
+                        step >= s
+                          ? "bg-blue-600 text-white"
+                          : "bg-white/10 text-slate-400"
+                      }`}
+                    >
+                      {s}
+                    </div>
+                    {s < 3 && (
+                      <div
+                        className={`h-0.5 w-8 ${
+                          step > s ? "bg-blue-600" : "bg-white/10"
+                        }`}
+                      />
+                    )}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
-          <form className="space-y-8 p-6 sm:p-8" onSubmit={handleSubmit}>
-            <section>
-              <h2 className="mb-4 text-lg font-extrabold text-slate-900">
-                Personal details
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    First name *
-                  </span>
-                  <input
-                    name="firstName"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="First Name"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Last name *
-                  </span>
-                  <input
-                    name="lastName"
-                    type="text"
-                    required
-                    onChange={handleChange}
-                    placeholder="Last Name"
-                    className={inputClass}
-                  />
-                </label>
-              </div>
-            </section>
-
-            <section>
-              <h2 className="mb-4 text-lg font-extrabold text-slate-900">
-                Account details
-              </h2>
-              <div className="grid gap-4 md:grid-cols-2">
+          <div className="space-y-8 p-6 sm:p-8">
+            {/* STEP 1: Email */}
+            {step === 1 && (
+              <section className="space-y-4">
+                <h2 className="text-lg font-extrabold text-slate-900">
+                  Verify your email
+                </h2>
+                <p className="text-sm font-semibold text-slate-500">
+                  Enter your email address and we'll send you a verification code.
+                </p>
                 <label className="block">
                   <span className="mb-2 block text-sm font-bold text-slate-600">
                     Email *
@@ -193,148 +252,263 @@ function Register() {
                     type="email"
                     required
                     onChange={handleChange}
-                    placeholder="you@example.com"
+                    placeholder="you@cmrit.ac.in"
                     className={inputClass}
                   />
                 </label>
-
-                <label className="block">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Password *
-                  </span>
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    onChange={handleChange}
-                    placeholder="Create a password"
-                    className={inputClass}
-                  />
-                </label>
-
-                <label className="block md:col-span-2">
-                  <span className="mb-2 block text-sm font-bold text-slate-600">
-                    Role *
-                  </span>
-                  <Select
-                    options={roleOptions}
-                    value={selectedRole}
-                    onChange={handleRoleChange}
-                    placeholder="Select Role"
-                    styles={selectStyles}
-                  />
-                </label>
-              </div>
-            </section>
-
-            {isAlumniRole && (
-              <section>
-                <h2 className="mb-4 text-lg font-extrabold text-slate-900">
-                  Academic details
-                </h2>
-                <div className="grid gap-4 md:grid-cols-2">
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Start year *
-                    </span>
-                    <input
-                      name="startYear"
-                      type="text"
-                      required={isAlumniRole}
-                      onChange={handleChange}
-                      placeholder="2020"
-                      className={inputClass}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      End year *
-                    </span>
-                    <input
-                      name="endYear"
-                      type="text"
-                      required={isAlumniRole}
-                      onChange={handleChange}
-                      placeholder="2024"
-                      className={inputClass}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Degree *
-                    </span>
-                    <Select
-                      options={degreeOptions}
-                      value={selectedDegree}
-                      onChange={handleDegreeChange}
-                      placeholder="Select Degree"
-                      styles={selectStyles}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Branch *
-                    </span>
-                    <input
-                      name="branch"
-                      type="text"
-                      required={isAlumniRole}
-                      onChange={handleChange}
-                      placeholder="Computer Science"
-                      className={inputClass}
-                    />
-                  </label>
-
-                  <label className="block">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      Roll number *
-                    </span>
-                    <input
-                      name="rollNumber"
-                      type="text"
-                      required={isAlumniRole}
-                      onChange={handleChange}
-                      placeholder="USN / Roll Number"
-                      className={inputClass}
-                    />
-                  </label>
-
-                  <label className="block md:col-span-2">
-                    <span className="mb-2 block text-sm font-bold text-slate-600">
-                      LinkedIn profile URL *
-                    </span>
-                    <input
-                      name="linkedinUrl"
-                      type="url"
-                      required={isAlumniRole}
-                      onChange={handleChange}
-                      placeholder="https://linkedin.com/in/yourprofile"
-                      className={inputClass}
-                    />
-                  </label>
-                </div>
+                <button
+                  type="button"
+                  onClick={handleSendOtp}
+                  disabled={loading || !formData.email}
+                  className="min-h-[46px] rounded-lg bg-blue-700 px-6 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
+                >
+                  {loading ? <Loader text="Sending" /> : "Send OTP"}
+                </button>
               </section>
             )}
 
-            <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm font-semibold text-slate-500">
-                Already registered?{" "}
-                <Link to="/login" className="text-blue-700 hover:underline">
-                  Sign in
-                </Link>
-              </p>
-              <button
-                type="submit"
-                disabled={loading}
-                className="min-h-[46px] rounded-lg bg-blue-700 px-6 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
-              >
-                {loading ? <Loader text="Please Wait" /> : "Create Account"}
-              </button>
-            </div>
-          </form>
+            {/* STEP 2: OTP */}
+            {step === 2 && (
+              <section className="space-y-4">
+                <h2 className="text-lg font-extrabold text-slate-900">
+                  Enter verification code
+                </h2>
+                <p className="text-sm font-semibold text-slate-500">
+                  We sent a 6-digit code to <strong>{formData.email}</strong>
+                </p>
+                <OtpInput length={6} onChange={setOtpValue} />
+                <div className="flex items-center gap-4">
+                  <button
+                    type="button"
+                    onClick={handleVerifyOtp}
+                    disabled={loading || otpValue.length !== 6}
+                    className="min-h-[46px] rounded-lg bg-blue-700 px-6 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {loading ? <Loader text="Verifying" /> : "Verify OTP"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    disabled={otpTimer > 0}
+                    className="text-sm font-bold text-blue-700 hover:underline disabled:text-slate-400 disabled:no-underline"
+                  >
+                    {otpTimer > 0 ? `Resend OTP in ${otpTimer}s` : "Resend OTP"}
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="text-sm font-bold text-slate-500 hover:text-slate-900"
+                >
+                  Change email
+                </button>
+              </section>
+            )}
+
+            {/* STEP 3: Full Form */}
+            {step === 3 && (
+              <form className="space-y-8" onSubmit={handleSubmit}>
+                <div className="rounded-lg border border-green-200 bg-green-50 p-4 text-sm font-bold text-green-700">
+                  ✓ Email verified: {formData.email}
+                </div>
+
+                <section>
+                  <h2 className="mb-4 text-lg font-extrabold text-slate-900">
+                    Personal details
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-bold text-slate-600">
+                        First name *
+                      </span>
+                      <input
+                        name="firstName"
+                        type="text"
+                        required
+                        onChange={handleChange}
+                        placeholder="First Name"
+                        className={inputClass}
+                      />
+                    </label>
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-bold text-slate-600">
+                        Last name *
+                      </span>
+                      <input
+                        name="lastName"
+                        type="text"
+                        required
+                        onChange={handleChange}
+                        placeholder="Last Name"
+                        className={inputClass}
+                      />
+                    </label>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 className="mb-4 text-lg font-extrabold text-slate-900">
+                    Account details
+                  </h2>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <label className="block">
+                      <span className="mb-2 block text-sm font-bold text-slate-600">
+                        Password *
+                      </span>
+                      <input
+                        name="password"
+                        type="password"
+                        required
+                        onChange={handleChange}
+                        placeholder="Create a password"
+                        className={inputClass}
+                      />
+                    </label>
+                    <label className="block md:col-span-2">
+                      <span className="mb-2 block text-sm font-bold text-slate-600">
+                        Role *
+                      </span>
+                      <Select
+                        options={roleOptions}
+                        value={selectedRole}
+                        onChange={handleRoleChange}
+                        placeholder="Select Role"
+                        styles={selectStyles}
+                      />
+                    </label>
+                  </div>
+                </section>
+
+                {isAlumniRole && (
+                  <section>
+                    <h2 className="mb-4 text-lg font-extrabold text-slate-900">
+                      Academic details
+                    </h2>
+                    <div className="grid gap-4 md:grid-cols-2">
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Start year *
+                        </span>
+                        <input
+                          name="startYear"
+                          type="text"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="2020"
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          End year *
+                        </span>
+                        <input
+                          name="endYear"
+                          type="text"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="2024"
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Degree *
+                        </span>
+                        <Select
+                          options={degreeOptions}
+                          value={selectedDegree}
+                          onChange={handleDegreeChange}
+                          placeholder="Select Degree"
+                          styles={selectStyles}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Branch *
+                        </span>
+                        <input
+                          name="branch"
+                          type="text"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="Computer Science"
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Roll number *
+                        </span>
+                        <input
+                          name="rollNumber"
+                          type="text"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="USN / Roll Number"
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Current Designation *
+                        </span>
+                        <input
+                          name="designation"
+                          type="text"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="Software Engineer"
+                          className={inputClass}
+                        />
+                      </label>
+                      <label className="block">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          Domain *
+                        </span>
+                        <Select
+                          options={domainOptions}
+                          value={selectedDomain}
+                          onChange={handleDomainChange}
+                          placeholder="Select Domain"
+                          styles={selectStyles}
+                        />
+                      </label>
+                      <label className="block md:col-span-2">
+                        <span className="mb-2 block text-sm font-bold text-slate-600">
+                          LinkedIn profile URL *
+                        </span>
+                        <input
+                          name="linkedinUrl"
+                          type="url"
+                          required={isAlumniRole}
+                          onChange={handleChange}
+                          placeholder="https://linkedin.com/in/yourprofile"
+                          className={inputClass}
+                        />
+                      </label>
+                    </div>
+                  </section>
+                )}
+
+                <div className="flex flex-col gap-3 border-t border-slate-200 pt-6 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm font-semibold text-slate-500">
+                    Already registered?{" "}
+                    <Link to="/login" className="text-blue-700 hover:underline">
+                      Sign in
+                    </Link>
+                  </p>
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="min-h-[46px] rounded-lg bg-blue-700 px-6 font-extrabold text-white transition hover:bg-blue-800 disabled:cursor-not-allowed disabled:opacity-70"
+                  >
+                    {loading ? <Loader text="Please Wait" /> : "Create Account"}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
         </section>
       </main>
     </>

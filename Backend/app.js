@@ -32,11 +32,13 @@ app.use(cookieParser());
 /* ---------------- ROUTES ---------------- */
 
 const router = require("./src/routes");
+const otpRoutes = require("./src/routes/otpRoutes");
 app.use("/", router);
+app.use("/otp", otpRoutes);
 
 /* ---------------- DB CONNECTION ---------------- */
 
-async function connectDB() {
+const connectDB = async () => {
   try {
     const connectionInstance = await mongoose.connect(
       process.env.MONGODB_URI
@@ -45,11 +47,14 @@ async function connectDB() {
     console.log(
       `MongoDB connected !! DB HOST: ${connectionInstance.connection.host}`
     );
+
+    const seedAdmin = require("./src/utils/seedAdmin");
+    await seedAdmin();
   } catch (error) {
     console.error("MONGODB connection FAILED:", error);
     process.exit(1);
   }
-}
+};
 
 connectDB();
 

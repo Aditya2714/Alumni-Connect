@@ -32,7 +32,7 @@ const formatJobForUi = (job) => ({
 
 function Jobs() {
   const user = getUserData() || {};
-  const isAdmin = user.role === "admin";
+  const isAlumni = user.role === "alumni";
   const [jobForm, setJobForm] = useState(emptyJobForm);
   const [jobs, setJobs] = useState([]);
   const [editingJobId, setEditingJobId] = useState(null);
@@ -120,11 +120,11 @@ function Jobs() {
             Jobs
           </p>
           <h1 className="text-3xl font-extrabold tracking-normal md:text-4xl">
-            Explore opportunities posted by admin.
+            Explore opportunities posted by fellow alumni.
           </h1>
           <p className="mt-3 max-w-2xl text-sm font-semibold leading-6 text-slate-300 md:text-base">
             Browse openings, referral-friendly roles, internships, and career
-            leads shared by the CMRIT administration.
+            leads shared by the CMRIT alumni network.
           </p>
           {loading && (
             <p className="mt-3 text-sm font-semibold text-teal-100">
@@ -133,7 +133,7 @@ function Jobs() {
           )}
         </div>
 
-        {isAdmin && (
+        {isAlumni && (
           <form
             onSubmit={handleSubmit}
             className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm md:p-6"
@@ -255,7 +255,7 @@ function Jobs() {
               <p className="mt-4 text-sm font-semibold leading-6 text-slate-500">
                 {job.description || "No description added yet."}
               </p>
-              {isAdmin ? (
+              {isAlumni ? (
                 <div className="mt-5 grid gap-3 sm:grid-cols-2">
                   <button
                     type="button"
@@ -287,7 +287,7 @@ function Jobs() {
               No jobs posted yet
             </h2>
             <p className="mt-2 text-sm font-semibold text-slate-500">
-              Job opportunities will appear here once the admin posts them.
+              Job opportunities will appear here once alumni post them.
             </p>
           </section>
         )}

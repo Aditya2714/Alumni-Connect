@@ -84,7 +84,14 @@ const AlumniSchema = new mongoose.Schema(
     fileType: String,
     originalFileName: String,
     company: String,
-    designation: String,
+    designation: {
+      type: String,
+      required: [true, "Current designation is required"],
+    },
+    domain: {
+      type: String,
+      required: [true, "Working domain is required"],
+    },
     location: String,
     bio: String,
     skills: [String],

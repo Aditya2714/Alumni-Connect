@@ -1,4 +1,7 @@
 const Announcement = require("../models/announcementModel");
+const User = require("../models/user");
+const Alumni = require("../models/alumniModel");
+const { sendAnnouncementEmail } = require("../utils/emailHelper");
 
 const createAnnouncement = async (req, res) => {
   try {
@@ -6,7 +9,11 @@ const createAnnouncement = async (req, res) => {
       return res.status(403).json({ status: "fail", message: "Admin access required" });
     }
 
-    const { title, audience, message } = req.body;
+    const { title, message, branch, batch } = req.body;
+    const attachmentUrl = req.file ? `/uploads/announcements/${req.file.filename}` : null;
+    const attachmentType = req.file
+      ? (req.file.mimetype.startsWith("image/") ? "image" : "pdf")
+      : null;
 
     if (!title || !message) {
       return res.status(400).json({
@@ -17,10 +24,40 @@ const createAnnouncement = async (req, res) => {
 
     const announcement = await Announcement.create({
       title,
-      audience,
+      branch,
+      batch,
       message,
+      attachmentUrl,
+      attachmentType,
       createdBy: req.user._id,
     });
+
+    try {
+      let alumniUsers = await User.find({ role: "alumni", isApproved: true }).select("name email");
+
+      const hasBranchFilter = branch && branch !== "All branches";
+      const hasBatchFilter = batch && batch !== "All batches";
+
+      if (hasBranchFilter || hasBatchFilter) {
+        const alumniQuery = {};
+        if (hasBranchFilter) alumniQuery.branch = branch;
+        if (hasBatchFilter) alumniQuery.endYear = parseInt(batch);
+
+        const alumniProfiles = await Alumni.find(alumniQuery).select("user");
+        const userIds = alumniProfiles.map((p) => p.user.toString());
+        alumniUsers = alumniUsers.filter((u) => userIds.includes(u._id.toString()));
+      }
+
+      for (const user of alumniUsers) {
+        sendAnnouncementEmail(user.email, user.name, announcement, attachmentUrl, attachmentType).catch(
+          (err) => console.error(`Failed to send email to ${user.email}:`, err)
+        );
+      }
+
+      console.log(`Announcement email triggered to ${alumniUsers.length} alumni`);
+    } catch (emailError) {
+      console.error("Email trigger error:", emailError);
+    }
 
     return res.status(201).json({
       status: "success",
